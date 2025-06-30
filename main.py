@@ -21,27 +21,27 @@ def initialize_system() -> ManagerAgent:
     # Check required dependencies and tools
     try:
         subprocess.run(["ffmpeg", "-version"], capture_output=True, timeout=5, check=True)
-        print("✅ FFmpeg available")
+        print("FFmpeg available")
     except:
-        raise Exception("❌ FFmpeg not found - required for video processing")
+        raise Exception("FFmpeg not found - required for video processing")
 
     try:
         import edge_tts
-        print("✅ edge-tts available")
+        print("edge-tts available")
     except ImportError:
-        raise Exception("❌ edge-tts not installed - required for narration")
+        raise Exception("edge-tts not installed - required for narration")
 
     try:
         from duckduckgo_search import DDGS
-        print("✅ duckduckgo-search available")
+        print("duckduckgo-search available")
     except ImportError:
-        raise Exception("❌ duckduckgo-search not installed")
+        raise Exception("duckduckgo-search not installed")
 
     try:
         import vosk
-        print("✅ Vosk available")
+        print("Vosk available")
     except ImportError:
-        raise Exception("❌ Vosk not installed - required for subtitles")
+        raise Exception("Vosk not installed - required for subtitles")
 
     # Initialize and test LLM connection
     try:
@@ -64,7 +64,7 @@ def initialize_system() -> ManagerAgent:
         print(f"✅ LLM connected: {config.MANAGER_AGENT_MODEL}")
 
     except Exception as e:
-        raise Exception(f"❌ LLM initialization failed: {e}")
+        raise Exception(f"LLM initialization failed: {e}")
 
     manager = ManagerAgent()
     print("✅ Multi-Agent System ready with LangChain tools")
@@ -115,9 +115,9 @@ def main():
     print("Features: LLM Manager Agent, Web Search für Content Research, Automated Workflow")
     print("=" * 80)
 
-    topic = input("📝 Enter video topic: ").strip()
+    topic = input("Enter video topic: ").strip()
     if not topic:
-        print("❌ Topic is required")
+        print("Topic is required")
         return
 
     start_time = time.time()
@@ -126,14 +126,14 @@ def main():
         duration = time.time() - start_time
 
         if video_path:
-            print(f"🎉 Success! Video created in {duration:.1f}s")
-            print(f"📁 {video_path}")
+            print(f"Success! Video created in {duration:.1f}s")
+            print(f"{video_path}")
         else:
-            print(f"⚠️ Process completed in {duration:.1f}s but no video file found")
+            print(f"⚠Process completed in {duration:.1f}s but no video file found")
 
     except Exception as e:
         duration = time.time() - start_time
-        print(f"❌ Failed after {duration:.1f}s: {e}")
+        print(f"Failed after {duration:.1f}s: {e}")
         raise
 
 
