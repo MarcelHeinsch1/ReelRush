@@ -110,7 +110,7 @@ def create_video_simple(topic: str) -> Optional[str]:
 
 def main():
     """Main function to run the TikTok creator"""
-    print("🎬 Multi-Agent TikTok Creator mit LangChain Tools")
+    print("🎬 Multi-Agent TikTok Creator with LangChain Tools")
     print("Requires: Ollama+models, Vosk, edge-tts, FFmpeg, duckduckgo-search")
     print("Features: LLM Manager Agent, Web Search für Content Research, Automated Workflow")
     print("=" * 80)
