@@ -1,6 +1,7 @@
 """Manager Agent for TikTok Creator"""
 
 import json
+import time
 from typing import Dict, List, Any
 from langchain_ollama import OllamaLLM
 from langchain.agents import create_react_agent, AgentExecutor
@@ -14,6 +15,9 @@ from tools import (
     VideoProductionTool,
     MusicMatchingTool
 )
+# Neue Imports für Logging
+from logger import PerformanceLogger
+import logging
 
 
 class ManagerAgent:
@@ -21,11 +25,16 @@ class ManagerAgent:
 
     def __init__(self):
         """Initialize manager with LLM and create agent executor"""
+        # Neue Logging-Zeilen
+        self.logger = logging.getLogger('ManagerAgent')
+        self.perf_logger = PerformanceLogger()
+
+        # Bestehende Initialisierung
         self.llm = OllamaLLM(
             model=config.MANAGER_AGENT_MODEL,
             base_url=config.OLLAMA_BASE_URL,
             timeout=60,
-            temperature=0.7
+            temperature=0.3
         )
         self.tools = self._initialize_tools()
         self.agent_executor = self._create_agent_executor()
@@ -65,6 +74,10 @@ class ManagerAgent:
 
     def create_viral_video(self, topic: str) -> Dict[str, Any]:
         """Create viral video using the agent workflow"""
+        # Neue Logging-Zeilen
+        self.logger.info(f"Creating viral video for topic: '{topic}'")
+        start_time = time.time()
+
         print(f"🎬 Manager Agent creating viral video: '{topic}'")
 
         try:
@@ -72,8 +85,13 @@ class ManagerAgent:
                 "input": f"Create a viral TikTok video about '{topic}'. Follow the complete workflow to analyze trends, research content, create script, produce video, and add music."
             })
 
+            # Performance-Logging
+            duration = time.time() - start_time
+            self.perf_logger.log_agent_performance("ManagerAgent", duration, "success")
+
             if "output" in result:
                 output_text = result["output"]
+                self.logger.info("Video creation completed successfully")
 
                 try:
                     start = output_text.find('{')
@@ -84,7 +102,8 @@ class ManagerAgent:
                             "status": "success",
                             "topic": topic,
                             "agent_output": output_text,
-                            "data": json_data
+                            "data": json_data,
+                            "performance_metrics": self.perf_logger.get_metrics()
                         }
                 except:
                     pass
@@ -93,9 +112,11 @@ class ManagerAgent:
                     "status": "success",
                     "topic": topic,
                     "agent_output": output_text,
-                    "message": "Video creation completed - check agent output for details"
+                    "message": "Video creation completed - check agent output for details",
+                    "performance_metrics": self.perf_logger.get_metrics()
                 }
             else:
+                self.logger.error("No output from agent")
                 return {
                     "status": "error",
                     "topic": topic,
@@ -104,6 +125,11 @@ class ManagerAgent:
                 }
 
         except Exception as e:
+            # Performance-Logging für Fehler
+            duration = time.time() - start_time
+            self.perf_logger.log_agent_performance("ManagerAgent", duration, "error", error=str(e))
+            self.logger.error(f"Video creation failed: {e}")
+
             return {
                 "status": "error",
                 "topic": topic,

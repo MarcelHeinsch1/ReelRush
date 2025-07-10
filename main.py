@@ -16,9 +16,9 @@ warnings.filterwarnings("ignore")
 
 def initialize_system() -> ManagerAgent:
     """Initialize the multi-agent system and verify all dependencies"""
-    print("🚀 Initializing Multi-Agent TikTok Creator...")
+    print("Initializing Multi-Agent TikTok Creator...")
 
-    # Check required dependencies and tools
+    # Check required dependencies nd tools
     try:
         subprocess.run(["ffmpeg", "-version"], capture_output=True, timeout=5, check=True)
         print("FFmpeg available")

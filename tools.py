@@ -16,6 +16,11 @@ from langchain_ollama import OllamaLLM
 from duckduckgo_search import DDGS
 from config import config
 from prompts import CONTENT_CREATION_PROMPT
+from logger import performance_tracker
+import logging
+
+# Erstelle logs Ordner wenn nicht vorhanden
+os.makedirs('./logs', exist_ok=True)
 
 
 class TrendAnalysisTool(BaseTool):
@@ -23,7 +28,11 @@ class TrendAnalysisTool(BaseTool):
     name: str = "trend_analysis"
     description: str = "Analyze viral trends and get trending topics for a given query using web search"
 
+    @performance_tracker("TrendAnalysis")
     def _run(self, query: str) -> str:
+        logger = logging.getLogger('TrendAnalysisTool')
+        logger.info(f"Analyzing trends for: {query}")
+
         try:
             time.sleep(2)
             ddgs = DDGS(timeout=20)
@@ -43,10 +52,12 @@ class TrendAnalysisTool(BaseTool):
                     if len(all_results) >= 10:
                         break
                 except Exception as e:
+                    logger.warning(f"Search attempt {i + 1} failed: {e}")
                     print(f"Search attempt {i + 1} failed: {e}")
                     continue
 
             if not all_results:
+                logger.error("No search results available")
                 return json.dumps({
                     "trending_topics": [],
                     "recommended_keywords": [],
@@ -77,9 +88,11 @@ class TrendAnalysisTool(BaseTool):
                 "search_results_count": len(all_results)
             }
 
+            logger.info(f"Found {len(trending_topics)} trending topics and {len(unique_keywords)} keywords")
             return json.dumps(result_data)
 
         except Exception as e:
+            logger.error(f"Trend analysis failed: {e}")
             return json.dumps({
                 "trending_topics": [],
                 "recommended_keywords": [],
@@ -94,7 +107,11 @@ class ContentResearchTool(BaseTool):
     name: str = "content_research"
     description: str = "Research content ideas and viral formats for a specific topic using web search"
 
+    @performance_tracker("ContentResearch")
     def _run(self, query: str) -> str:
+        logger = logging.getLogger('ContentResearchTool')
+        logger.info(f"Researching content for: {query}")
+
         try:
             time.sleep(2)
             ddgs = DDGS(timeout=15)
@@ -103,10 +120,12 @@ class ContentResearchTool(BaseTool):
             try:
                 results = list(ddgs.text(search_query, max_results=6))
             except Exception as e:
+                logger.warning(f"Content research search failed: {e}")
                 print(f"Content research search failed: {e}")
                 results = []
 
             if not results:
+                logger.error("No content research results found")
                 return json.dumps({
                     "content_hooks": [],
                     "viral_formats": [],
@@ -139,9 +158,12 @@ class ContentResearchTool(BaseTool):
                 "research_sources": len(results)
             }
 
+            logger.info(
+                f"Found {len(research_data['content_hooks'])} hooks and {len(research_data['viral_formats'])} formats")
             return json.dumps(research_data)
 
         except Exception as e:
+            logger.error(f"Content research failed: {e}")
             return json.dumps({
                 "content_hooks": [],
                 "viral_formats": [],
@@ -166,7 +188,11 @@ class ContentCreationTool(BaseTool):
             temperature=0.7
         )
 
+    @performance_tracker("ContentCreation")
     def _run(self, input_data: str) -> str:
+        logger = logging.getLogger('ContentCreationTool')
+        logger.info("Creating TikTok script")
+
         try:
             data = json.loads(input_data)
             topic = data.get("topic", "")
@@ -176,6 +202,7 @@ class ContentCreationTool(BaseTool):
             formats = data.get("formats", [])
 
             if not topic:
+                logger.error("No topic provided")
                 return json.dumps({"error": "No topic provided"})
 
             trend_text = ", ".join(trends[:6]) if trends else ""
@@ -191,21 +218,27 @@ class ContentCreationTool(BaseTool):
                 format_text=format_text
             )
 
+            logger.info(f"Generating script for topic: {topic}")
+
             for attempt in range(3):
                 try:
                     response = self._llm.invoke(prompt)
                     content = self._extract_json(response)
                     if content:
                         validated_content = self._validate_content(content)
+                        logger.info("Script generated successfully")
                         return json.dumps(validated_content)
                     else:
                         if attempt == 2:
+                            logger.error("Failed to generate valid JSON after 3 attempts")
                             return json.dumps({"error": "Failed to generate valid JSON after 3 attempts"})
                 except Exception as e:
                     if attempt == 2:
+                        logger.error(f"Content generation failed: {e}")
                         return json.dumps({"error": f"Content generation failed: {str(e)}"})
 
         except Exception as e:
+            logger.error(f"Content creation tool failed: {e}")
             return json.dumps({"error": f"Content creation tool failed: {str(e)}"})
 
     def _extract_json(self, response: str) -> Optional[Dict]:
@@ -254,17 +287,27 @@ class VideoProductionTool(BaseTool):
     name: str = "video_production"
     description: str = "Create video with narration and subtitles from script"
 
+    @performance_tracker("VideoProduction")
     def _run(self, input_data: str) -> str:
+        logger = logging.getLogger('VideoProductionTool')
+        logger.info("Starting video production")
+
         try:
             data = json.loads(input_data)
             script_text = data.get("script_text", "")
             video_length = data.get("video_length", 35)
 
             if not script_text:
+                logger.error("No script text provided")
                 return json.dumps({"error": "No script text provided"})
 
+            logger.info("Creating narration")
             narration_path = self._create_narration(script_text)
+
+            logger.info("Selecting video template")
             template_path = self._select_template()
+
+            logger.info("Creating video with subtitles")
             final_video = self._create_video_with_subtitles(
                 template_path, script_text, narration_path, video_length
             )
@@ -276,9 +319,11 @@ class VideoProductionTool(BaseTool):
                 "narration_path": narration_path
             }
 
+            logger.info(f"Video production completed: {final_video}")
             return json.dumps(result)
 
         except Exception as e:
+            logger.error(f"Video production failed: {e}")
             return json.dumps({"error": f"Video production failed: {str(e)}"})
 
     def _create_narration(self, script_text: str) -> str:
@@ -351,7 +396,8 @@ class VideoProductionTool(BaseTool):
             pass
 
         if result.returncode != 0 or not os.path.exists(abs_output):
-            error_msg = result.stderr.decode('utf-8', errors='ignore')[:200] if result.stderr else "Unknown FFmpeg error"
+            error_msg = result.stderr.decode('utf-8', errors='ignore')[
+                        :200] if result.stderr else "Unknown FFmpeg error"
             raise Exception(f"FFmpeg failed to create video: {error_msg}")
 
         return abs_output
@@ -467,15 +513,23 @@ class MusicMatchingTool(BaseTool):
     name: str = "music_matching"
     description: str = "Add background music to video"
 
+    @performance_tracker("MusicMatching")
     def _run(self, input_data: str) -> str:
+        logger = logging.getLogger('MusicMatchingTool')
+        logger.info("Adding background music")
+
         try:
             data = json.loads(input_data)
             video_path = data.get("video_path", "")
 
             if not os.path.exists(video_path):
+                logger.error(f"Video file not found: {video_path}")
                 return json.dumps({"error": "Video file not found"})
 
+            logger.info("Selecting music")
             music_path = self._select_music()
+
+            logger.info(f"Adding music to video: {music_path}")
             final_video = self._add_music_to_video(video_path, music_path)
 
             result = {
@@ -484,9 +538,11 @@ class MusicMatchingTool(BaseTool):
                 "original_video": video_path
             }
 
+            logger.info(f"Music added successfully: {final_video}")
             return json.dumps(result)
 
         except Exception as e:
+            logger.error(f"Music matching failed: {e}")
             return json.dumps({"error": f"Music matching failed: {str(e)}"})
 
     def _select_music(self) -> str:
@@ -516,7 +572,8 @@ class MusicMatchingTool(BaseTool):
         result = subprocess.run(cmd, capture_output=True, timeout=180)
 
         if result.returncode != 0 or not os.path.exists(output_path):
-            error_msg = result.stderr.decode('utf-8', errors='ignore')[:200] if result.stderr else "Unknown FFmpeg error"
+            error_msg = result.stderr.decode('utf-8', errors='ignore')[
+                        :200] if result.stderr else "Unknown FFmpeg error"
             raise Exception(f"Failed to add music: {error_msg}")
 
         return output_path

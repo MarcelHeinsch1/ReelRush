@@ -20,12 +20,15 @@ class Config:
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
     # Individual LLM models for each agent
+    agent = "gemma3:27b"
+    #USED
+    MANAGER_AGENT_MODEL: str = agent
+    CONTENT_CREATION_MODEL: str = agent
+    #NOT USED (YET)
     TREND_ANALYSIS_MODEL: str = "qwen3:30b"
     CONTENT_RESEARCH_MODEL: str = "qwen3:30b"
-    CONTENT_CREATION_MODEL: str = "qwen3:30b"
     VIDEO_PRODUCTION_MODEL: str = "qwen3:30b"
     MUSIC_MATCHING_MODEL: str = "qwen3:30b"
-    MANAGER_AGENT_MODEL: str = "qwen3:30b"
 
 
 config = Config()
