@@ -81,8 +81,9 @@ class ManagerAgent:
         print(f"🎬 Manager Agent creating viral video: '{topic}'")
 
         try:
+            # Angepasster Input für flexibleren Workflow
             result = self.agent_executor.invoke({
-                "input": f"Create a viral TikTok video about '{topic}'. Follow the complete workflow to analyze trends, research content, create script, produce video, and add music."
+                "input": f"Create a viral TikTok video about '{topic}'. Analyze trends first, then decide if content research is needed based on the results."
             })
 
             # Performance-Logging
