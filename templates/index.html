@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Creator - AI Video Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 40px 0;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .jobs-section {
+            margin-top: 40px;
+        }
+
+        .jobs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .jobs-header h2 {
+            color: #333;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .job-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+
+        .job-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .job-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .job-meta {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-initializing {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .status-processing {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-download {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: #218838;
+        }
+
+        .logs-container {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .log-timestamp {
+            color: #999;
+            margin-right: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .main-card {
+                padding: 20px;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .job-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 TikTok Creator</h1>
+            <p>AI-Powered Viral Video Generator with Multi-Agent System</p>
+        </div>
+
+        <div class="main-card">
+            <div class="input-section">
+                <h2 style="margin-bottom: 20px;">Create New Video</h2>
+                <div class="input-group">
+                    <input
+                        type="text"
+                        id="topicInput"
+                        placeholder="Enter your video topic (e.g., 'productivity tips', 'cooking hacks', 'tech trends')"
+                        onkeypress="if(event.key === 'Enter') createVideo()"
+                    >
+                    <button class="btn btn-primary" onclick="createVideo()" id="createBtn">
+                        Create Video
+                    </button>
+                </div>
+                <p style="color: #666; font-size: 0.9em;">
+                    The AI will analyze trends, research content, create a script, generate narration, and produce a complete video with subtitles and music.
+                </p>
+            </div>
+
+            <div class="jobs-section">
+                <div class="jobs-header">
+                    <h2>Video Queue</h2>
+                    <button class="btn btn-secondary" onclick="cleanupOldVideos()">
+                        Clean Up Old Videos
+                    </button>
+                </div>
+                <div id="jobsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let activeJobs = new Set();
+
+        async function createVideo() {
+            const topic = document.getElementById('topicInput').value.trim();
+            if (!topic) {
+                alert('Please enter a video topic');
+                return;
+            }
+
+            const createBtn = document.getElementById('createBtn');
+            createBtn.disabled = true;
+            createBtn.innerHTML = 'Creating... <span class="loader"></span>';
+
+            try {
+                const response = await fetch('/api/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('topicInput').value = '';
+                    activeJobs.add(data.job_id);
+                    startPolling(data.job_id);
+                    updateJobsList();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Failed to create video: ' + error.message);
+            } finally {
+                createBtn.disabled = false;
+                createBtn.textContent = 'Create Video';
+            }
+        }
+
+        function startPolling(jobId) {
+            const pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/status/${jobId}`);
+                    const job = await response.json();
+
+                    if (job.status === 'completed' || job.status === 'failed') {
+                        clearInterval(pollInterval);
+                        activeJobs.delete(jobId);
+                    }
+
+                    updateJobsList();
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 2000);
+        }
+
+        async function updateJobsList() {
+            try {
+                const response = await fetch('/api/jobs');
+                const jobs = await response.json();
+
+                const jobsList = document.getElementById('jobsList');
+
+                if (jobs.length === 0) {
+                    jobsList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📹</div>
+                            <p>No videos yet. Create your first viral TikTok!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                jobsList.innerHTML = jobs.map(job => {
+                    const createdAt = new Date(job.created_at).toLocaleString();
+                    const statusClass = `status-${job.status}`;
+
+                    let progressBar = '';
+                    if (job.status === 'processing' || job.status === 'initializing') {
+                        progressBar = `
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${job.progress}%"></div>
+                            </div>
+                        `;
+                    }
+
+                    let actions = '';
+                    if (job.status === 'completed' && job.video_path) {
+                        actions = `
+                            <button class="btn btn-small btn-download" onclick="downloadVideo('${job.job_id}')">
+                                📥 Download Video
+                            </button>
+                        `;
+                    }
+
+                    let errorMsg = '';
+                    if (job.status === 'failed' && job.error) {
+                        errorMsg = `<div class="error-message">Error: ${job.error}</div>`;
+                    }
+
+                    let logs = '';
+                    if (job.logs && job.logs.length > 0) {
+                        logs = `
+                            <div class="logs-container">
+                                ${job.logs.map(log => `
+                                    <div class="log-entry">
+                                        <span class="log-timestamp">${new Date(log.timestamp).toLocaleTimeString()}</span>
+                                        ${log.message}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div class="job-card">
+                            <div class="job-header">
+                                <div>
+                                    <div class="job-title">${job.topic}</div>
+                                    <div class="job-meta">Created: ${createdAt}</div>
+                                </div>
+                                <span class="status-badge ${statusClass}">${job.status}</span>
+                            </div>
+                            ${progressBar}
+                            ${errorMsg}
+                            ${logs}
+                            <div class="job-actions">
+                                ${actions}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to update jobs list:', error);
+            }
+        }
+
+        async function downloadVideo(jobId) {
+            window.location.href = `/api/download/${jobId}`;
+        }
+
+        async function cleanupOldVideos() {
+            if (!confirm('This will delete all videos older than 1 hour. Continue?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/cleanup', { method: 'POST' });
+                const data = await response.json();
+                alert(data.message);
+                updateJobsList();
+            } catch (error) {
+                alert('Cleanup failed: ' + error.message);
+            }
+        }
+
+        // Initial load and periodic updates
+        updateJobsList();
+        setInterval(updateJobsList, 5000);
+
+        // Restore active polling for incomplete jobs on page load
+        window.addEventListener('load', async () => {
+            const response = await fetch('/api/jobs');
+            const jobs = await response.json();
+
+            jobs.forEach(job => {
+                if (job.status === 'pending' || job.status === 'initializing' || job.status === 'processing') {
+                    if (!activeJobs.has(job.job_id)) {
+                        activeJobs.add(job.job_id);
+                        startPolling(job.job_id);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
