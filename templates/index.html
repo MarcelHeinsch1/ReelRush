@@ -229,14 +229,16 @@
 
         .logs-container {
             margin-top: 15px;
-            max-height: 200px;
+            height: 200px;
             overflow-y: auto;
+            overflow-x: hidden;
             background: white;
             border-radius: 8px;
             padding: 15px;
             font-family: 'Courier New', monospace;
             font-size: 0.85em;
             line-height: 1.6;
+            border: 1px solid #e0e0e0;
         }
 
         .log-entry {
@@ -350,6 +352,7 @@
 
     <script>
         let activeJobs = new Set();
+        let jobsData = new Map();
 
         async function createVideo() {
             const topic = document.getElementById('topicInput').value.trim();
@@ -374,7 +377,6 @@
                 if (response.ok) {
                     document.getElementById('topicInput').value = '';
                     activeJobs.add(data.job_id);
-                    startPolling(data.job_id);
                     updateJobsList();
                 } else {
                     alert('Error: ' + data.error);
@@ -385,24 +387,6 @@
                 createBtn.disabled = false;
                 createBtn.textContent = 'Create Video';
             }
-        }
-
-        function startPolling(jobId) {
-            const pollInterval = setInterval(async () => {
-                try {
-                    const response = await fetch(`/api/status/${jobId}`);
-                    const job = await response.json();
-
-                    if (job.status === 'completed' || job.status === 'failed') {
-                        clearInterval(pollInterval);
-                        activeJobs.delete(jobId);
-                    }
-
-                    updateJobsList();
-                } catch (error) {
-                    console.error('Polling error:', error);
-                }
-            }, 2000);
         }
 
         async function updateJobsList() {
@@ -422,49 +406,57 @@
                     return;
                 }
 
-                jobsList.innerHTML = jobs.map(job => {
-                    const createdAt = new Date(job.created_at).toLocaleString();
-                    const statusClass = `status-${job.status}`;
+                // Update only changed jobs
+                jobs.forEach(job => {
+                    const existingCard = document.getElementById(`job-${job.job_id}`);
+                    const jobChanged = !jobsData.has(job.job_id) ||
+                                     JSON.stringify(jobsData.get(job.job_id)) !== JSON.stringify(job);
 
-                    let progressBar = '';
-                    if (job.status === 'processing' || job.status === 'initializing') {
-                        progressBar = `
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${job.progress}%"></div>
-                            </div>
-                        `;
-                    }
+                    if (jobChanged) {
+                        jobsData.set(job.job_id, job);
 
-                    let actions = '';
-                    if (job.status === 'completed' && job.video_path) {
-                        actions = `
-                            <button class="btn btn-small btn-download" onclick="downloadVideo('${job.job_id}')">
-                                📥 Download Video
-                            </button>
-                        `;
-                    }
+                        const createdAt = new Date(job.created_at).toLocaleString();
+                        const statusClass = `status-${job.status}`;
 
-                    let errorMsg = '';
-                    if (job.status === 'failed' && job.error) {
-                        errorMsg = `<div class="error-message">Error: ${job.error}</div>`;
-                    }
+                        let progressBar = '';
+                        if (job.status === 'processing' || job.status === 'initializing') {
+                            progressBar = `
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${job.progress}%"></div>
+                                </div>
+                            `;
+                        }
 
-                    let logs = '';
-                    if (job.logs && job.logs.length > 0) {
-                        logs = `
-                            <div class="logs-container">
-                                ${job.logs.map(log => `
-                                    <div class="log-entry">
-                                        <span class="log-timestamp">${new Date(log.timestamp).toLocaleTimeString()}</span>
-                                        ${log.message}
-                                    </div>
-                                `).join('')}
-                            </div>
-                        `;
-                    }
+                        let actions = '';
+                        if (job.status === 'completed' && job.video_path) {
+                            actions = `
+                                <button class="btn btn-small btn-download" onclick="downloadVideo('${job.job_id}')">
+                                    📥 Download Video
+                                </button>
+                            `;
+                        }
 
-                    return `
-                        <div class="job-card">
+                        let errorMsg = '';
+                        if (job.status === 'failed' && job.error) {
+                            errorMsg = `<div class="error-message">Error: ${job.error}</div>`;
+                        }
+
+                        let logs = '';
+                        if (job.logs && job.logs.length > 0) {
+                            const logsId = `logs-${job.job_id}`;
+                            logs = `
+                                <div class="logs-container" id="${logsId}">
+                                    ${job.logs.map(log => `
+                                        <div class="log-entry">
+                                            <span class="log-timestamp">${new Date(log.timestamp).toLocaleTimeString()}</span>
+                                            ${log.message}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                        }
+
+                        const cardHtml = `
                             <div class="job-header">
                                 <div>
                                     <div class="job-title">${job.topic}</div>
@@ -478,9 +470,52 @@
                             <div class="job-actions">
                                 ${actions}
                             </div>
-                        </div>
-                    `;
-                }).join('');
+                        `;
+
+                        if (existingCard) {
+                            // Update existing card preserving scroll
+                            const oldLogsContainer = existingCard.querySelector('.logs-container');
+                            const oldLogCount = oldLogsContainer ? oldLogsContainer.querySelectorAll('.log-entry').length : 0;
+
+                            existingCard.innerHTML = cardHtml;
+
+                            const newLogsContainer = existingCard.querySelector('.logs-container');
+                            if (newLogsContainer) {
+                                const newLogCount = newLogsContainer.querySelectorAll('.log-entry').length;
+                                // If new logs were added, scroll to bottom
+                                if (newLogCount > oldLogCount) {
+                                    newLogsContainer.scrollTop = newLogsContainer.scrollHeight;
+                                }
+                            }
+                        } else {
+                            // Create new card
+                            const newCard = document.createElement('div');
+                            newCard.className = 'job-card';
+                            newCard.id = `job-${job.job_id}`;
+                            newCard.innerHTML = cardHtml;
+
+                            // Insert at the beginning
+                            jobsList.insertBefore(newCard, jobsList.firstChild);
+
+                            // Scroll new logs to bottom
+                            const logsContainer = newCard.querySelector('.logs-container');
+                            if (logsContainer) {
+                                logsContainer.scrollTop = logsContainer.scrollHeight;
+                            }
+                        }
+                    }
+                });
+
+                // Remove deleted jobs
+                const currentJobIds = new Set(jobs.map(j => j.job_id));
+                jobsData.forEach((_, jobId) => {
+                    if (!currentJobIds.has(jobId)) {
+                        const card = document.getElementById(`job-${jobId}`);
+                        if (card) card.remove();
+                        jobsData.delete(jobId);
+                    }
+                });
+
             } catch (error) {
                 console.error('Failed to update jobs list:', error);
             }
@@ -507,22 +542,7 @@
 
         // Initial load and periodic updates
         updateJobsList();
-        setInterval(updateJobsList, 5000);
-
-        // Restore active polling for incomplete jobs on page load
-        window.addEventListener('load', async () => {
-            const response = await fetch('/api/jobs');
-            const jobs = await response.json();
-
-            jobs.forEach(job => {
-                if (job.status === 'pending' || job.status === 'initializing' || job.status === 'processing') {
-                    if (!activeJobs.has(job.job_id)) {
-                        activeJobs.add(job.job_id);
-                        startPolling(job.job_id);
-                    }
-                }
-            });
-        });
+        setInterval(updateJobsList, 2000);
     </script>
 </body>
 </html>

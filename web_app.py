@@ -11,8 +11,8 @@ from datetime import datetime
 from typing import Dict, Optional
 import logging
 
-# Import your existing modules
-from config import config
+# Import config with integrated ConfigManager
+from config import Config, ConfigManager
 from manager import ManagerAgent
 
 app = Flask(__name__)
@@ -76,7 +76,13 @@ def create_video_with_progress(job: VideoCreationJob):
         job.status = "initializing"
         job.update_progress("Initializing TikTok Creator", 5)
 
-        # Initialize manager
+        # Create a unique config for this job using the topic
+        job_config = Config(topic=job.topic, job_id=job.job_id)
+
+        # Set config for this thread
+        ConfigManager.set_config(job_config)
+
+        # Initialize manager with unique config
         manager = ManagerAgent()
         job.update_progress("System initialized", 10)
 
@@ -178,10 +184,17 @@ def create_video_with_progress(job: VideoCreationJob):
             job.update_progress("Video completed!", 100)
             job.add_log(f"Duration: {duration:.1f}s | Size: {size_mb:.1f}MB")
             job.add_log(f"File: {os.path.basename(job.video_path)}")
+
+            # Clear thread config
+            ConfigManager.clear_config()
         else:
+            # Clear thread config even on failure
+            ConfigManager.clear_config()
             raise Exception("Video file not found after creation")
 
     except Exception as e:
+        # Make sure to clear config on error
+        ConfigManager.clear_config()
         job.status = "failed"
         job.error = str(e)
         job.completed_at = datetime.now()

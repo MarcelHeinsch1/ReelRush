@@ -1,4 +1,4 @@
-"""Main entry point for Multi-Agent TikTok Creator"""
+"""Main entry point for Multi-Agent TikTok Creator - Fixed for new Config"""
 
 import os
 import subprocess
@@ -8,7 +8,7 @@ import requests
 import re
 from typing import Optional
 from langchain_ollama import OllamaLLM
-from config import config
+from config import Config, ConfigManager
 from manager import ManagerAgent
 
 warnings.filterwarnings("ignore")
@@ -45,13 +45,15 @@ def initialize_system() -> ManagerAgent:
 
     # Initialize and test LLM connection
     try:
-        response = requests.get(f"{config.OLLAMA_BASE_URL}/api/tags", timeout=5)
+        # Use a temporary config for initialization
+        temp_config = Config()
+        response = requests.get(f"{temp_config.OLLAMA_BASE_URL}/api/tags", timeout=5)
         if response.status_code != 200:
             raise Exception("Ollama not responding")
 
         llm = OllamaLLM(
-            model=config.MANAGER_AGENT_MODEL,
-            base_url=config.OLLAMA_BASE_URL,
+            model=temp_config.MANAGER_AGENT_MODEL,
+            base_url=temp_config.OLLAMA_BASE_URL,
             timeout=60,
             temperature=0.7
         )
@@ -61,7 +63,7 @@ def initialize_system() -> ManagerAgent:
         if not test_response or "READY" not in test_response.upper():
             raise Exception("LLM test failed")
 
-        print(f"✅ LLM connected: {config.MANAGER_AGENT_MODEL}")
+        print(f"✅ LLM connected: {temp_config.MANAGER_AGENT_MODEL}")
 
     except Exception as e:
         raise Exception(f"LLM initialization failed: {e}")
@@ -73,39 +75,47 @@ def initialize_system() -> ManagerAgent:
 
 def create_video_simple(topic: str) -> Optional[str]:
     """Simple API for video creation - returns path to created video"""
-    manager = initialize_system()
-    result = manager.create_viral_video(topic)
+    # Create a unique config for this video based on topic
+    video_config = Config(topic=topic)
+    ConfigManager.set_config(video_config)
 
-    if result["status"] == "success":
-        print("📋 Agent Execution Log:")
-        print(result.get("agent_output", "No detailed output available"))
+    try:
+        manager = initialize_system()
+        result = manager.create_viral_video(topic)
 
-        output_text = result.get("agent_output", "")
-        if "video_with_music" in output_text:
-            matches = re.findall(r'"video_with_music":\s*"([^"]+)"', output_text)
-            if matches:
-                video_path = matches[0]
-                if os.path.exists(video_path):
-                    size_mb = os.path.getsize(video_path) / (1024 * 1024)
-                    print(f"📁 Video: {video_path} ({size_mb:.1f}MB)")
-                    return video_path
+        if result["status"] == "success":
+            print("📋 Agent Execution Log:")
+            print(result.get("agent_output", "No detailed output available"))
 
-        output_dir = "./output"
-        if os.path.exists(output_dir):
-            mp4_files = [f for f in os.listdir(output_dir) if f.endswith('.mp4')]
-            if mp4_files:
-                latest_file = max(
-                    [os.path.join(output_dir, f) for f in mp4_files],
-                    key=os.path.getmtime
-                )
-                size_mb = os.path.getsize(latest_file) / (1024 * 1024)
-                print(f"📁 Found video: {latest_file} ({size_mb:.1f}MB)")
-                return latest_file
+            output_text = result.get("agent_output", "")
+            if "video_with_music" in output_text:
+                matches = re.findall(r'"video_with_music":\s*"([^"]+)"', output_text)
+                if matches:
+                    video_path = matches[0]
+                    if os.path.exists(video_path):
+                        size_mb = os.path.getsize(video_path) / (1024 * 1024)
+                        print(f"📁 Video: {video_path} ({size_mb:.1f}MB)")
+                        return video_path
 
-        print("⚠️ Video creation completed but file not found")
-        return None
-    else:
-        raise Exception(f"Video creation failed: {result.get('error', 'Unknown error')}")
+            output_dir = "./output"
+            if os.path.exists(output_dir):
+                mp4_files = [f for f in os.listdir(output_dir) if f.endswith('.mp4')]
+                if mp4_files:
+                    latest_file = max(
+                        [os.path.join(output_dir, f) for f in mp4_files],
+                        key=os.path.getmtime
+                    )
+                    size_mb = os.path.getsize(latest_file) / (1024 * 1024)
+                    print(f"📁 Found video: {latest_file} ({size_mb:.1f}MB)")
+                    return latest_file
+
+            print("⚠️ Video creation completed but file not found")
+            return None
+        else:
+            raise Exception(f"Video creation failed: {result.get('error', 'Unknown error')}")
+    finally:
+        # Clean up thread config
+        ConfigManager.clear_config()
 
 
 def main():

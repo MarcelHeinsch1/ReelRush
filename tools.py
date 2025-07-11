@@ -616,7 +616,10 @@ class MusicMatchingTool(BaseTool):
         return os.path.join(music_dir, random.choice(music_files))
 
     def _add_music_to_video(self, video_path: str, music_path: str) -> str:
-        output_path = video_path.replace(".mp4", "_with_music.mp4")
+        """Add music to video with unique output filename"""
+        # Extract base name without extension from the input video
+        base_name = os.path.splitext(os.path.basename(video_path))[0]
+        output_path = os.path.join(os.path.dirname(video_path), f"{base_name}_with_music.mp4")
 
         cmd = [
             "ffmpeg", "-y", "-i", video_path, "-i", music_path,
