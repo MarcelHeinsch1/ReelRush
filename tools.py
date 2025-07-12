@@ -19,9 +19,6 @@ from prompts import CONTENT_CREATION_PROMPT
 from logger import performance_tracker
 import logging
 
-# Import the new research tools
-from researchtools import ContentResearchTool
-
 # Erstelle logs Ordner wenn nicht vorhanden
 os.makedirs('./logs', exist_ok=True)
 
@@ -102,6 +99,133 @@ class TrendAnalysisTool(BaseTool):
                 "viral_scores": {},
                 "search_results_count": 0,
                 "error": f"Search failed: {str(e)}"
+            })
+
+
+class ContentResearchTool(BaseTool):
+    """LangChain tool for researching content ideas and viral formats for specific topics"""
+    name: str = "content_research"
+    description: str = "Research content ideas and viral formats for a specific topic using web search"
+
+    def __init__(self):
+        super().__init__()
+        # Initialize LLM for content analysis
+        self._llm = OllamaLLM(
+            model=config.CONTENT_RESEARCH_MODEL,
+            base_url=config.OLLAMA_BASE_URL,
+            timeout=60,
+            temperature=0.7
+        )
+
+    @performance_tracker("ContentResearch")
+    def _run(self, query: str) -> str:
+        logger = logging.getLogger('ContentResearchTool')
+        logger.info(f"Researching content for: {query}")
+
+        try:
+            time.sleep(2)
+            ddgs = DDGS(timeout=15)
+            search_query = f"{query} viral content ideas"
+
+            try:
+                results = list(ddgs.text(search_query, max_results=6))
+            except Exception as e:
+                logger.warning(f"Content research search failed: {e}")
+                print(f"Content research search failed: {e}")
+                results = []
+
+            if not results:
+                logger.error("No content research results found")
+                return json.dumps({
+                    "content_hooks": [],
+                    "viral_formats": [],
+                    "engagement_tips": [],
+                    "research_sources": 0,
+                    "error": "No content research results found"
+                })
+
+            # Prepare search results for LLM analysis
+            search_data = "\n\n".join([
+                f"Title: {r['title']}\nContent: {r['body'][:300]}..."
+                for r in results
+            ])
+
+            # Use LLM to analyze search results
+            analysis_prompt = f"""Analyze these search results about viral content for "{query}":
+
+{search_data}
+
+Extract and provide:
+1. 5 compelling hooks/opening lines for TikTok videos
+2. 3 proven viral formats that work for this topic
+3. 5 specific engagement tips based on what's working
+
+Respond in JSON format:
+{{"hooks": ["hook1", "hook2"...], "formats": ["format1"...], "tips": ["tip1"...]}}"""
+
+            logger.info("Using LLM to analyze search results")
+
+            try:
+                llm_response = self._llm.invoke(analysis_prompt)
+
+                # Extract JSON from LLM response
+                start = llm_response.find('{')
+                end = llm_response.rfind('}') + 1
+                if start != -1 and end > start:
+                    analysis = json.loads(llm_response[start:end])
+                else:
+                    raise ValueError("No valid JSON in LLM response")
+
+                research_data = {
+                    "content_hooks": analysis.get("hooks", [])[:8],
+                    "viral_formats": analysis.get("formats", [])[:6],
+                    "engagement_tips": analysis.get("tips", [])[:8],
+                    "research_sources": len(results),
+                    "ai_analyzed": True
+                }
+
+            except Exception as e:
+                logger.warning(f"LLM analysis failed, falling back to basic extraction: {e}")
+                # Fallback to original logic if LLM fails
+                hooks = []
+                formats = []
+                engagement_tips = []
+
+                for result in results:
+                    content = (result["title"] + " " + result["body"][:150]).lower()
+                    sentences = re.split(r'[.!?]', content)
+                    for sentence in sentences:
+                        if ('?' in sentence or '!' in sentence) and len(sentence.strip()) > 8:
+                            hooks.append(sentence.strip())
+
+                    if any(word in content for word in ["format", "template", "viral", "hook"]):
+                        formats.append(content[:100].strip())
+
+                    if any(word in content for word in ["engage", "viral", "trend", "popular"]):
+                        engagement_tips.append(content[:80].strip())
+
+                research_data = {
+                    "content_hooks": list(set(hooks))[:8],
+                    "viral_formats": list(set(formats))[:6],
+                    "engagement_tips": list(set(engagement_tips))[:8],
+                    "research_sources": len(results),
+                    "ai_analyzed": False
+                }
+
+            logger.info(
+                f"Found {len(research_data['content_hooks'])} hooks and {len(research_data['viral_formats'])} formats"
+                + (" (AI analyzed)" if research_data.get("ai_analyzed") else " (basic extraction)")
+            )
+            return json.dumps(research_data)
+
+        except Exception as e:
+            logger.error(f"Content research failed: {e}")
+            return json.dumps({
+                "content_hooks": [],
+                "viral_formats": [],
+                "engagement_tips": [],
+                "research_sources": 0,
+                "error": f"Content research failed: {str(e)}"
             })
 
 
