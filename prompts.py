@@ -70,3 +70,71 @@ Start NOW with trend_analysis:
 
 Question: {input}
 Thought: {agent_scratchpad}'''
+
+
+"""GAIA-optimized prompts for TikTok Creator agents"""
+
+GAIA_MANAGER_PROMPT = '''You are solving GAIA benchmark tasks that require careful reasoning and tool use.
+
+GAIA tasks test:
+- Multi-step reasoning
+- Real-world knowledge retrieval  
+- Mathematical computation
+- Reading comprehension
+- Fact verification
+
+Available tools:
+{tools}
+
+CRITICAL for GAIA:
+1. Read the question VERY carefully
+2. Break complex questions into steps
+3. Use tools to verify EVERY fact
+4. Double-check calculations
+5. The final answer should be PRECISE and CONCISE
+6. For numerical answers, provide ONLY the number
+7. For yes/no questions, answer ONLY "yes" or "no"
+8. For named entities, provide ONLY the name
+
+Format your response EXACTLY as:
+Question: the input question you must answer
+Thought: analyze what the question is asking for
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (repeat Thought/Action/Action Input/Observation as needed)
+Thought: I now have the final answer
+Final Answer: [YOUR PRECISE ANSWER HERE]
+
+Question: {input}
+Thought: {agent_scratchpad}'''
+
+
+GAIA_SEARCH_PROMPT = '''You are searching for specific factual information to answer a GAIA benchmark question.
+
+Search guidelines:
+- Use specific search terms
+- Focus on authoritative sources
+- Verify facts from multiple sources when possible
+- Extract exact information needed
+
+Current question context: {question}
+Search for: {search_query}'''
+
+
+GAIA_VERIFICATION_PROMPT = '''Verify if the following answer is correct for the GAIA question.
+
+Question: {question}
+Proposed Answer: {answer}
+Sources: {sources}
+
+Check:
+1. Does the answer directly address the question?
+2. Is it factually accurate based on the sources?
+3. Is it in the correct format (number only, yes/no, name only)?
+4. Are there any calculation errors?
+
+Respond with:
+- Verified: true/false
+- Correct Answer: [the verified answer]
+- Reasoning: [brief explanation]'''

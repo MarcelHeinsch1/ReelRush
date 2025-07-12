@@ -7,7 +7,7 @@ from langchain_ollama import OllamaLLM
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain.prompts import PromptTemplate
 from config import config
-from prompts import MANAGER_AGENT_PROMPT
+from prompts import MANAGER_AGENT_PROMPT, GAIA_MANAGER_PROMPT
 from tools import (
     TrendAnalysisTool,
     ContentResearchTool,
@@ -15,7 +15,6 @@ from tools import (
     VideoProductionTool,
     MusicMatchingTool
 )
-# Neue Imports für Logging
 from logger import PerformanceLogger
 import logging
 
@@ -23,9 +22,10 @@ import logging
 class ManagerAgent:
     """Main manager agent that orchestrates all tools using LangChain"""
 
-    def __init__(self):
+    def __init__(self, mode="tiktok"):
         """Initialize manager with LLM and create agent executor"""
         # Neue Logging-Zeilen
+        self.mode = mode
         self.logger = logging.getLogger('ManagerAgent')
         self.perf_logger = PerformanceLogger()
 
@@ -51,14 +51,25 @@ class ManagerAgent:
 
     def _create_agent_executor(self) -> AgentExecutor:
         """Create LangChain agent executor with ReAct pattern"""
-        prompt = PromptTemplate(
-            template=MANAGER_AGENT_PROMPT,
-            input_variables=["input", "agent_scratchpad"],
-            partial_variables={
-                "tools": "\n".join([f"{tool.name}: {tool.description}" for tool in self.tools]),
-                "tool_names": ", ".join([tool.name for tool in self.tools])
-            }
-        )
+        if self.mode == "gaia":
+            print("hallo")
+            prompt = PromptTemplate(
+                template=GAIA_MANAGER_PROMPT,
+                input_variables=["input", "agent_scratchpad"],
+                partial_variables={
+                    "tools": "\n".join([f"{tool.name}: {tool.description}" for tool in self.tools]),
+                    "tool_names": ", ".join([tool.name for tool in self.tools])
+                }
+            )
+        else:
+            prompt = PromptTemplate(
+                template=MANAGER_AGENT_PROMPT,
+                input_variables=["input", "agent_scratchpad"],
+                partial_variables={
+                    "tools": "\n".join([f"{tool.name}: {tool.description}" for tool in self.tools]),
+                    "tool_names": ", ".join([tool.name for tool in self.tools])
+                }
+            )
 
         agent = create_react_agent(self.llm, self.tools, prompt)
 
