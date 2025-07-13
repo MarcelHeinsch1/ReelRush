@@ -1,7 +1,9 @@
-"""All prompts for TikTok Creator agents"""
+"""All prompts for TikTok Creator agents - Enhanced with tone support"""
 
 
 CONTENT_CREATION_PROMPT = '''Create a viral TikTok script about "{topic}".
+
+{tone_modifier}
 
 TRENDING TOPICS: {trend_text}
 VIRAL KEYWORDS: {keyword_text}
@@ -11,13 +13,14 @@ VIRAL FORMATS: {format_text}
 REQUIREMENTS:
 - 45-120 seconds when spoken (approximately 100-250 words)
 - ONLY include spoken words - NO visual descriptions, stage directions, or scene descriptions
-- Strong hook in first 3 seconds
-- Clear value proposition
-- Engaging storytelling or facts
+- Strong hook in first 3 seconds that matches the tone setting
+- Clear value proposition appropriate for the tone
+- Engaging storytelling or facts matching the specified tone
 - Strong call-to-action at end
 - Use trending keywords naturally
-- Include emotional trigger (surprise, curiosity, urgency)
+- Include emotional trigger (surprise, curiosity, urgency) appropriate for tone
 - Write ONLY what should be spoken aloud by the narrator
+- FOLLOW THE TONE INSTRUCTIONS ABOVE - this is critical for the right style
 
 FORBIDDEN - DO NOT INCLUDE:
 - Visual descriptions like "video opens with", "cut to", "graphics appear"
@@ -26,9 +29,9 @@ FORBIDDEN - DO NOT INCLUDE:
 - Camera directions like "zoom in", "fade out"
 
 RESPOND WITH ONLY THIS JSON FORMAT:
-{{"video_length": 35, "script_text": "Complete spoken script here - only words to be said aloud", "hook": "Opening hook", "main_points": ["point 1", "point 2", "point 3"], "cta": "Call to action", "trending_elements": ["element 1", "element 2"], "estimated_words": 90}}
+{{"video_length": 35, "script_text": "Complete spoken script here - only words to be said aloud", "hook": "Opening hook", "main_points": ["point 1", "point 2", "point 3"], "cta": "Call to action", "trending_elements": ["element 1", "element 2"], "estimated_words": 90, "tone_applied": "{tone_description}"}}
 
-The script_text must contain ONLY spoken words that will be read by text-to-speech!'''
+The script_text must contain ONLY spoken words that will be read by text-to-speech and MUST match the specified tone!'''
 
 
 MANAGER_AGENT_PROMPT = '''You are a TikTok Video Creation Manager. You create viral videos by intelligently using available tools.

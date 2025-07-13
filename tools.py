@@ -1,4 +1,4 @@
-"""LangChain tools for TikTok Creator"""
+"""LangChain tools for TikTok Creator - Enhanced with tone support"""
 
 import os
 import subprocess
@@ -102,137 +102,13 @@ class TrendAnalysisTool(BaseTool):
             })
 
 
-class ContentResearchTool(BaseTool):
-    """LangChain tool for researching content ideas and viral formats for specific topics"""
-    name: str = "content_research"
-    description: str = "Research content ideas and viral formats for a specific topic using web search"
-
-    def __init__(self):
-        super().__init__()
-        # Initialize LLM for content analysis
-        self._llm = OllamaLLM(
-            model=config.CONTENT_RESEARCH_MODEL,
-            base_url=config.OLLAMA_BASE_URL,
-            timeout=60,
-            temperature=0.7
-        )
-
-    @performance_tracker("ContentResearch")
-    def _run(self, query: str) -> str:
-        logger = logging.getLogger('ContentResearchTool')
-        logger.info(f"Researching content for: {query}")
-
-        try:
-            time.sleep(2)
-            ddgs = DDGS(timeout=15)
-            search_query = f"{query} viral content ideas"
-
-            try:
-                results = list(ddgs.text(search_query, max_results=6))
-            except Exception as e:
-                logger.warning(f"Content research search failed: {e}")
-                print(f"Content research search failed: {e}")
-                results = []
-
-            if not results:
-                logger.error("No content research results found")
-                return json.dumps({
-                    "content_hooks": [],
-                    "viral_formats": [],
-                    "engagement_tips": [],
-                    "research_sources": 0,
-                    "error": "No content research results found"
-                })
-
-            # Prepare search results for LLM analysis
-            search_data = "\n\n".join([
-                f"Title: {r['title']}\nContent: {r['body'][:300]}..."
-                for r in results
-            ])
-
-            # Use LLM to analyze search results
-            analysis_prompt = f"""Analyze these search results about viral content for "{query}":
-
-{search_data}
-
-Extract and provide:
-1. 5 compelling hooks/opening lines for TikTok videos
-2. 3 proven viral formats that work for this topic
-3. 5 specific engagement tips based on what's working
-
-Respond in JSON format:
-{{"hooks": ["hook1", "hook2"...], "formats": ["format1"...], "tips": ["tip1"...]}}"""
-
-            logger.info("Using LLM to analyze search results")
-
-            try:
-                llm_response = self._llm.invoke(analysis_prompt)
-
-                # Extract JSON from LLM response
-                start = llm_response.find('{')
-                end = llm_response.rfind('}') + 1
-                if start != -1 and end > start:
-                    analysis = json.loads(llm_response[start:end])
-                else:
-                    raise ValueError("No valid JSON in LLM response")
-
-                research_data = {
-                    "content_hooks": analysis.get("hooks", [])[:8],
-                    "viral_formats": analysis.get("formats", [])[:6],
-                    "engagement_tips": analysis.get("tips", [])[:8],
-                    "research_sources": len(results),
-                    "ai_analyzed": True
-                }
-
-            except Exception as e:
-                logger.warning(f"LLM analysis failed, falling back to basic extraction: {e}")
-                # Fallback to original logic if LLM fails
-                hooks = []
-                formats = []
-                engagement_tips = []
-
-                for result in results:
-                    content = (result["title"] + " " + result["body"][:150]).lower()
-                    sentences = re.split(r'[.!?]', content)
-                    for sentence in sentences:
-                        if ('?' in sentence or '!' in sentence) and len(sentence.strip()) > 8:
-                            hooks.append(sentence.strip())
-
-                    if any(word in content for word in ["format", "template", "viral", "hook"]):
-                        formats.append(content[:100].strip())
-
-                    if any(word in content for word in ["engage", "viral", "trend", "popular"]):
-                        engagement_tips.append(content[:80].strip())
-
-                research_data = {
-                    "content_hooks": list(set(hooks))[:8],
-                    "viral_formats": list(set(formats))[:6],
-                    "engagement_tips": list(set(engagement_tips))[:8],
-                    "research_sources": len(results),
-                    "ai_analyzed": False
-                }
-
-            logger.info(
-                f"Found {len(research_data['content_hooks'])} hooks and {len(research_data['viral_formats'])} formats"
-                + (" (AI analyzed)" if research_data.get("ai_analyzed") else " (basic extraction)")
-            )
-            return json.dumps(research_data)
-
-        except Exception as e:
-            logger.error(f"Content research failed: {e}")
-            return json.dumps({
-                "content_hooks": [],
-                "viral_formats": [],
-                "engagement_tips": [],
-                "research_sources": 0,
-                "error": f"Content research failed: {str(e)}"
-            })
+# ContentResearchTool is imported from researchtools.py
 
 
 class ContentCreationTool(BaseTool):
-    """LangChain tool for creating TikTok scripts based on topic, trends, and research data"""
+    """LangChain tool for creating TikTok scripts based on topic, trends, and research data with tone support"""
     name: str = "content_creation"
-    description: str = "Create TikTok script based on topic, trends, and research data"
+    description: str = "Create TikTok script based on topic, trends, and research data with tone customization"
 
     def __init__(self):
         super().__init__()
@@ -247,7 +123,7 @@ class ContentCreationTool(BaseTool):
     @performance_tracker("ContentCreation")
     def _run(self, input_data: str) -> str:
         logger = logging.getLogger('ContentCreationTool')
-        logger.info("Creating TikTok script")
+        logger.info("Creating TikTok script with tone settings")
 
         try:
             data = json.loads(input_data)
@@ -261,6 +137,13 @@ class ContentCreationTool(BaseTool):
                 logger.error("No topic provided")
                 return json.dumps({"error": "No topic provided"})
 
+            # Get tone settings from config
+            tone_modifier = config.TONE_MODIFIER
+            tone_description = config.TONE_DESCRIPTION
+            tone_value = config.TONE_VALUE
+
+            logger.info(f"Using tone: {tone_description} (value: {tone_value:.2f})")
+
             trend_text = ", ".join(trends[:6]) if trends else ""
             keyword_text = ", ".join(keywords[:12]) if keywords else ""
             hook_text = " | ".join(hooks[:5]) if hooks else ""
@@ -268,21 +151,23 @@ class ContentCreationTool(BaseTool):
 
             prompt = CONTENT_CREATION_PROMPT.format(
                 topic=topic,
+                tone_modifier=tone_modifier,
+                tone_description=tone_description,
                 trend_text=trend_text,
                 keyword_text=keyword_text,
                 hook_text=hook_text,
                 format_text=format_text
             )
 
-            logger.info(f"Generating script for topic: {topic}")
+            logger.info(f"Generating script for topic: {topic} with tone: {tone_description}")
 
             for attempt in range(3):
                 try:
                     response = self._llm.invoke(prompt)
                     content = self._extract_json(response)
                     if content:
-                        validated_content = self._validate_content(content)
-                        logger.info("Script generated successfully")
+                        validated_content = self._validate_content(content, tone_description)
+                        logger.info(f"Script generated successfully with tone: {validated_content.get('tone_applied', 'unknown')}")
                         return json.dumps(validated_content)
                     else:
                         if attempt == 2:
@@ -316,7 +201,7 @@ class ContentCreationTool(BaseTool):
                 pass
         return None
 
-    def _validate_content(self, content: Dict) -> Dict[str, Any]:
+    def _validate_content(self, content: Dict, tone_description: str) -> Dict[str, Any]:
         video_length = content.get('video_length', 35)
         try:
             video_length = max(config.MIN_VIDEO_LENGTH, min(int(video_length), config.MAX_VIDEO_LENGTH))
@@ -334,7 +219,9 @@ class ContentCreationTool(BaseTool):
             "main_points": content.get('main_points', []),
             "cta": content.get('cta', ''),
             "trending_elements": content.get('trending_elements', []),
-            "estimated_words": content.get('estimated_words', len(script_text.split()))
+            "estimated_words": content.get('estimated_words', len(script_text.split())),
+            "tone_applied": content.get('tone_applied', tone_description),
+            "tone_value": config.TONE_VALUE
         }
 
 

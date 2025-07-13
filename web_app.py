@@ -1,4 +1,4 @@
-"""Web Frontend for TikTok Creator - Optional Flask Application"""
+"""Web Frontend for TikTok Creator - Enhanced with Settings Support"""
 
 import os
 import json
@@ -27,11 +27,12 @@ video_jobs = {}
 
 
 class VideoCreationJob:
-    """Manages a single video creation job"""
+    """Manages a single video creation job with enhanced settings"""
 
-    def __init__(self, job_id: str, topic: str):
+    def __init__(self, job_id: str, topic: str, settings: Dict = None):
         self.job_id = job_id
         self.topic = topic
+        self.settings = settings or {}
         self.status = "pending"
         self.progress = 0
         self.video_path = None
@@ -59,6 +60,7 @@ class VideoCreationJob:
         return {
             "job_id": self.job_id,
             "topic": self.topic,
+            "settings": self.settings,
             "status": self.status,
             "progress": self.progress,
             "current_stage": self.current_stage,
@@ -70,14 +72,70 @@ class VideoCreationJob:
         }
 
 
+def create_enhanced_prompt_modifier(tone_value: float) -> str:
+    """Create prompt modifier based on tone setting"""
+    if tone_value < 0.2:
+        return """
+TONE MODIFIER - VERY HUMOROUS/MEMEY:
+- Use lots of internet slang, memes, and trending phrases
+- Include emojis and expressive language
+- Focus on entertainment over education
+- Use humor, jokes, and funny comparisons
+- Reference popular culture and viral trends
+- Make it shareable and relatable
+- Priority: Fun and engagement over facts
+"""
+    elif tone_value < 0.4:
+        return """
+TONE MODIFIER - HUMOROUS:
+- Balance entertainment with some useful info
+- Use casual, friendly language with humor
+- Include some memes and trending references
+- Make facts entertaining and easy to digest
+- Use engaging storytelling with funny elements
+- Priority: 70% entertainment, 30% information
+"""
+    elif tone_value < 0.6:
+        return """
+TONE MODIFIER - BALANCED:
+- Mix entertainment and information equally
+- Use conversational but informative tone
+- Include both fun facts and useful information
+- Make content engaging but educational
+- Use relatable examples and moderate humor
+- Priority: 50% entertainment, 50% information
+"""
+    elif tone_value < 0.8:
+        return """
+TONE MODIFIER - INFORMATIVE:
+- Focus on providing valuable information
+- Use clear, educational language
+- Include facts, tips, and useful insights
+- Make content authoritative but accessible
+- Use professional but engaging tone
+- Priority: 70% information, 30% entertainment
+"""
+    else:
+        return """
+TONE MODIFIER - VERY INFORMATIVE/EDUCATIONAL:
+- Focus entirely on educational content
+- Use professional, authoritative language
+- Include detailed facts, statistics, and insights
+- Prioritize accuracy and depth of information
+- Use academic or expert-level explanations
+- Minimize entertainment elements
+- Priority: 90% information, 10% engagement
+"""
+
+
 def create_video_with_progress(job: VideoCreationJob):
-    """Create video with manual progress tracking"""
+    """Create video with manual progress tracking and enhanced settings"""
     try:
         job.status = "initializing"
-        job.update_progress("Initializing TikTok Creator", 5)
+        job.update_progress("Initializing TikTok Creator with custom settings", 5)
 
-        # Create a unique config for this job using the topic
-        job_config = Config(topic=job.topic, job_id=job.job_id)
+        # Create a unique config for this job using the topic and settings
+        job_config = Config(topic=job.topic, job_id=job.job_id, settings=job.settings)
 
         # Set config for this thread
         ConfigManager.set_config(job_config)
@@ -89,15 +147,20 @@ def create_video_with_progress(job: VideoCreationJob):
         job.status = "processing"
         creation_timestamp = datetime.now()
 
+        # Apply tone settings to the manager/prompts
+        tone_value = job.settings.get('tone', 0.5)
+        tone_modifier = create_enhanced_prompt_modifier(tone_value)
+
+        job.add_log(f"Applying tone setting: {tone_value:.1f} ({'Humorous' if tone_value < 0.5 else 'Informative'})")
+
         # Simulate progress based on expected timing
-        # Start background progress simulation
         def simulate_progress():
             stages = [
                 (15, "Starting multi-agent workflow"),
-                (25, "Analyzing viral trends"),
+                (25, f"Analyzing viral trends ({'humor-focused' if tone_value < 0.5 else 'info-focused'})"),
                 (35, "Searching for trending topics"),
                 (45, "Researching content ideas"),
-                (55, "Creating viral script"),
+                (55, f"Creating {'entertaining' if tone_value < 0.5 else 'informative'} script"),
                 (65, "Generating AI narration"),
                 (75, "Processing video templates"),
                 (85, "Adding dynamic subtitles"),
@@ -121,7 +184,7 @@ def create_video_with_progress(job: VideoCreationJob):
         progress_thread.daemon = True
         progress_thread.start()
 
-        # Actually create the video
+        # Actually create the video (no need to modify topic here, tools will use config settings)
         start_time = time.time()
         result = manager.create_viral_video(job.topic)
         duration = time.time() - start_time
@@ -184,6 +247,7 @@ def create_video_with_progress(job: VideoCreationJob):
             job.update_progress("Video completed!", 100)
             job.add_log(f"Duration: {duration:.1f}s | Size: {size_mb:.1f}MB")
             job.add_log(f"File: {os.path.basename(job.video_path)}")
+            job.add_log(f"Tone: {'Humorous' if tone_value < 0.5 else 'Informative'} ({tone_value:.1f})")
 
             # Clear thread config
             ConfigManager.clear_config()
@@ -210,17 +274,27 @@ def index():
 
 @app.route('/api/create', methods=['POST'])
 def create_video():
-    """Start video creation job"""
+    """Start video creation job with enhanced settings support"""
     data = request.json
     topic = data.get('topic', '').strip()
+    settings = data.get('settings', {})
 
     if not topic:
         return jsonify({"error": "Topic is required"}), 400
 
-    # Create new job
+    # Validate settings
+    tone = settings.get('tone', 0.5)
+    if not (0 <= tone <= 1):
+        return jsonify({"error": "Tone must be between 0 and 1"}), 400
+
+    # Create new job with settings
     job_id = str(uuid.uuid4())
-    job = VideoCreationJob(job_id, topic)
+    job = VideoCreationJob(job_id, topic, settings)
     video_jobs[job_id] = job
+
+    # Log settings
+    logger.info(f"Creating video for '{topic}' with settings: {settings}")
+    job.add_log(f"Settings - Tone: {tone:.2f} ({'Humorous' if tone < 0.5 else 'Informative'})")
 
     # Start video creation in background
     thread = threading.Thread(target=create_video_with_progress, args=(job,))
@@ -229,7 +303,8 @@ def create_video():
     return jsonify({
         "job_id": job_id,
         "message": "Video creation started",
-        "topic": topic
+        "topic": topic,
+        "settings": settings
     })
 
 
@@ -262,11 +337,16 @@ def download_video(job_id):
         logger.error(f"Video file not found at: {video_file}")
         return jsonify({"error": f"Video file not found at: {video_file}"}), 404
 
-    # Generate filename based on topic and job ID
+    # Generate filename based on topic, settings and job ID
     safe_topic = "".join(c for c in job.topic if c.isalnum() or c in (' ', '-', '_')).rstrip()
     safe_topic = safe_topic[:50]  # Limit length
     timestamp = job.created_at.strftime("%Y%m%d_%H%M%S")
-    filename = f"tiktok_{safe_topic}_{timestamp}.mp4"
+
+    # Add tone info to filename
+    tone_value = job.settings.get('tone', 0.5)
+    tone_suffix = "humorous" if tone_value < 0.5 else "informative"
+
+    filename = f"tiktok_{safe_topic}_{tone_suffix}_{timestamp}.mp4"
 
     logger.info(f"Serving video file: {video_file} as {filename}")
 
@@ -323,7 +403,12 @@ if __name__ == '__main__':
     # Create templates directory if it doesn't exist
     os.makedirs('templates', exist_ok=True)
 
-    print("🌐 TikTok Creator Web Frontend")
+    print("🌐 TikTok Creator Web Frontend - Enhanced Version")
+    print("=" * 50)
+    print("New Features:")
+    print("✨ Content Tone Control (Humorous ↔ Informative)")
+    print("🎯 Advanced Settings Panel")
+    print("📊 Enhanced Job Tracking")
     print("=" * 50)
     print("Access the web interface at: http://localhost:5000")
     print("The original CLI tool (main.py) can still be used independently")

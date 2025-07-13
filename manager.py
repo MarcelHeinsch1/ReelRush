@@ -1,4 +1,4 @@
-"""Manager Agent for TikTok Creator"""
+"""Manager Agent for TikTok Creator - Corrected imports"""
 
 import json
 import time
@@ -10,11 +10,12 @@ from config import config
 from prompts import MANAGER_AGENT_PROMPT, GAIA_MANAGER_PROMPT
 from tools import (
     TrendAnalysisTool,
-    ContentResearchTool,
     ContentCreationTool,
     VideoProductionTool,
     MusicMatchingTool
 )
+# Import ContentResearchTool from researchtools.py
+from researchtools import ContentResearchTool
 from logger import PerformanceLogger
 import logging
 
@@ -43,7 +44,7 @@ class ManagerAgent:
         """Initialize all LangChain tools for the agent"""
         return [
             TrendAnalysisTool(),
-            ContentResearchTool(),
+            ContentResearchTool(),  # Now imported from researchtools.py
             ContentCreationTool(),
             VideoProductionTool(),
             MusicMatchingTool()

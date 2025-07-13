@@ -74,6 +74,123 @@
             border-color: #667eea;
         }
 
+        .settings-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .setting-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+
+        .setting-icon:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .setting-icon.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .settings-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            display: none;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .setting-group {
+            margin-bottom: 20px;
+        }
+
+        .setting-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-label {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tone-slider-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .tone-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
+            outline: none;
+            -webkit-appearance: none;
+            margin: 15px 0;
+        }
+
+        .tone-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .tone-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .tone-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .tone-value {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
         .btn {
             padding: 15px 30px;
             font-size: 16px;
@@ -288,6 +405,13 @@
             margin-top: 10px;
         }
 
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -309,6 +433,10 @@
                 flex-direction: column;
                 gap: 10px;
             }
+
+            .settings-bar {
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>
@@ -322,6 +450,72 @@
         <div class="main-card">
             <div class="input-section">
                 <h2 style="margin-bottom: 20px;">Create New Video</h2>
+
+                <!-- Settings Bar -->
+                <div class="settings-bar">
+                    <div class="setting-icon" onclick="toggleSetting('tone')" id="toneIcon" title="Content Tone">
+                        🎭
+                    </div>
+                    <div class="setting-icon" onclick="toggleSetting('models')" id="modelsIcon" title="AI Models">
+                        🤖
+                    </div>
+                    <div class="setting-icon" onclick="toggleSetting('pdf')" id="pdfIcon" title="PDF Upload">
+                        📄
+                    </div>
+                </div>
+
+                <!-- Tone Settings Panel -->
+                <div class="settings-panel" id="tonePanel">
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            🎭 Content Tone
+                        </div>
+                        <div class="tone-slider-container">
+                            <input type="range"
+                                   min="0"
+                                   max="100"
+                                   value="50"
+                                   class="tone-slider"
+                                   id="toneSlider"
+                                   oninput="updateToneValue(this.value)">
+                            <div class="tone-labels">
+                                <span>🤣 Humoristisch/Memig</span>
+                                <span>📚 Informativ/Sachlich</span>
+                            </div>
+                            <div class="tone-value" id="toneValue">
+                                Ausgeglichen (50% Humor, 50% Info)
+                            </div>
+                        </div>
+                        <div class="help-text">
+                            Bestimme den Stil deines TikToks: Links für lustige Memes und Humor, rechts für sachliche Informationen und Fakten.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Models Settings Panel (Placeholder for next step) -->
+                <div class="settings-panel" id="modelsPanel">
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            🤖 AI Models Configuration
+                        </div>
+                        <div class="help-text">
+                            Model-Auswahl wird in der nächsten Version implementiert.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PDF Upload Panel (Placeholder for next step) -->
+                <div class="settings-panel" id="pdfPanel">
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            📄 PDF Document Upload
+                        </div>
+                        <div class="help-text">
+                            PDF-Upload und -Zusammenfassung wird in der nächsten Version implementiert.
+                        </div>
+                    </div>
+                </div>
+
                 <div class="input-group">
                     <input
                         type="text"
@@ -353,6 +547,52 @@
     <script>
         let activeJobs = new Set();
         let jobsData = new Map();
+        let currentSettings = {
+            tone: 0.5, // 0 = humorous, 1 = informative
+            models: {},
+            pdfFile: null
+        };
+
+        function toggleSetting(settingType) {
+            // Close all panels first
+            document.querySelectorAll('.settings-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.querySelectorAll('.setting-icon').forEach(icon => {
+                icon.classList.remove('active');
+            });
+
+            // Open the clicked panel
+            const panel = document.getElementById(settingType + 'Panel');
+            const icon = document.getElementById(settingType + 'Icon');
+
+            if (panel && icon) {
+                panel.classList.add('active');
+                icon.classList.add('active');
+            }
+        }
+
+        function updateToneValue(value) {
+            const toneValue = value / 100; // Convert to 0-1 range
+            currentSettings.tone = toneValue;
+
+            const toneValueElement = document.getElementById('toneValue');
+            let description = '';
+
+            if (toneValue < 0.2) {
+                description = `Sehr humoristisch (${Math.round((1-toneValue)*100)}% Humor)`;
+            } else if (toneValue < 0.4) {
+                description = `Humoristisch (${Math.round((1-toneValue)*100)}% Humor, ${Math.round(toneValue*100)}% Info)`;
+            } else if (toneValue < 0.6) {
+                description = `Ausgeglichen (${Math.round((1-toneValue)*100)}% Humor, ${Math.round(toneValue*100)}% Info)`;
+            } else if (toneValue < 0.8) {
+                description = `Informativ (${Math.round((1-toneValue)*100)}% Humor, ${Math.round(toneValue*100)}% Info)`;
+            } else {
+                description = `Sehr informativ (${Math.round(toneValue*100)}% Info)`;
+            }
+
+            toneValueElement.textContent = description;
+        }
 
         async function createVideo() {
             const topic = document.getElementById('topicInput').value.trim();
@@ -366,10 +606,15 @@
             createBtn.innerHTML = 'Creating... <span class="loader"></span>';
 
             try {
+                const payload = {
+                    topic: topic,
+                    settings: currentSettings
+                };
+
                 const response = await fetch('/api/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ topic })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
@@ -378,6 +623,14 @@
                     document.getElementById('topicInput').value = '';
                     activeJobs.add(data.job_id);
                     updateJobsList();
+
+                    // Close settings panels after creating video
+                    document.querySelectorAll('.settings-panel').forEach(panel => {
+                        panel.classList.remove('active');
+                    });
+                    document.querySelectorAll('.setting-icon').forEach(icon => {
+                        icon.classList.remove('active');
+                    });
                 } else {
                     alert('Error: ' + data.error);
                 }
@@ -456,10 +709,18 @@
                             `;
                         }
 
+                        // Show tone setting if available
+                        let toneInfo = '';
+                        if (job.settings && typeof job.settings.tone !== 'undefined') {
+                            const tonePercent = Math.round(job.settings.tone * 100);
+                            const toneType = job.settings.tone < 0.5 ? '🤣 Humoristisch' : '📚 Informativ';
+                            toneInfo = `<span style="margin-left: 10px; font-size: 0.8em; color: #666;">${toneType} (${tonePercent}%)</span>`;
+                        }
+
                         const cardHtml = `
                             <div class="job-header">
                                 <div>
-                                    <div class="job-title">${job.topic}</div>
+                                    <div class="job-title">${job.topic}${toneInfo}</div>
                                     <div class="job-meta">Created: ${createdAt}</div>
                                 </div>
                                 <span class="status-badge ${statusClass}">${job.status}</span>
@@ -543,6 +804,9 @@
         // Initial load and periodic updates
         updateJobsList();
         setInterval(updateJobsList, 2000);
+
+        // Initialize tone value display
+        updateToneValue(50);
     </script>
 </body>
 </html>
