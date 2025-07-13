@@ -1,4 +1,4 @@
-"""LangChain tools for TikTok Creator - Enhanced with tone support"""
+"""LangChain tools for TikTok Creator - Enhanced with tone support and FIXED PDF mode"""
 
 import os
 import subprocess
@@ -14,8 +14,10 @@ import vosk
 from langchain.tools import BaseTool
 from langchain_ollama import OllamaLLM
 from duckduckgo_search import DDGS
+
+import prompts
 from config import config
-from prompts import CONTENT_CREATION_PROMPT
+from prompts import CONTENT_CREATION_PROMPT, PDF_CONTENT_CREATION_PROMPT
 from logger import performance_tracker
 import logging
 
@@ -106,13 +108,12 @@ class TrendAnalysisTool(BaseTool):
 
 
 class ContentCreationTool(BaseTool):
-    """LangChain tool for creating TikTok scripts based on topic, trends, and research data with tone support"""
+    """LangChain tool for creating TikTok scripts based on topic, trends, and research data with tone and PDF support"""
     name: str = "content_creation"
-    description: str = "Create TikTok script based on topic, trends, and research data with tone customization"
+    description: str = "Create TikTok script based on topic, trends, research data, or PDF content with tone customization"
 
     def __init__(self):
         super().__init__()
-        # Initialize LLM as private attribute
         self._llm = OllamaLLM(
             model=config.CONTENT_CREATION_MODEL,
             base_url=config.OLLAMA_BASE_URL,
@@ -123,66 +124,152 @@ class ContentCreationTool(BaseTool):
     @performance_tracker("ContentCreation")
     def _run(self, input_data: str) -> str:
         logger = logging.getLogger('ContentCreationTool')
-        logger.info("Creating TikTok script with tone settings")
 
         try:
             data = json.loads(input_data)
             topic = data.get("topic", "")
-            trends = data.get("trends", [])
-            keywords = data.get("keywords", [])
-            hooks = data.get("hooks", [])
-            formats = data.get("formats", [])
 
-            if not topic:
-                logger.error("No topic provided")
-                return json.dumps({"error": "No topic provided"})
-
-            # Get tone settings from config
-            tone_modifier = config.TONE_MODIFIER
-            tone_description = config.TONE_DESCRIPTION
-            tone_value = config.TONE_VALUE
-
-            logger.info(f"Using tone: {tone_description} (value: {tone_value:.2f})")
-
-            trend_text = ", ".join(trends[:6]) if trends else ""
-            keyword_text = ", ".join(keywords[:12]) if keywords else ""
-            hook_text = " | ".join(hooks[:5]) if hooks else ""
-            format_text = " | ".join(formats[:4]) if formats else ""
-
-            prompt = CONTENT_CREATION_PROMPT.format(
-                topic=topic,
-                tone_modifier=tone_modifier,
-                tone_description=tone_description,
-                trend_text=trend_text,
-                keyword_text=keyword_text,
-                hook_text=hook_text,
-                format_text=format_text
+            # FIXED: Check for PDF mode properly
+            is_pdf_mode = (
+                "PDF Summary:" in topic or
+                data.get("pdf_content") or
+                data.get("pdf_mode") or
+                config.settings.get('pdf_mode', False)
             )
 
-            logger.info(f"Generating script for topic: {topic} with tone: {tone_description}")
-
-            for attempt in range(3):
-                try:
-                    response = self._llm.invoke(prompt)
-                    content = self._extract_json(response)
-                    if content:
-                        validated_content = self._validate_content(content, tone_description)
-                        logger.info(f"Script generated successfully with tone: {validated_content.get('tone_applied', 'unknown')}")
-                        return json.dumps(validated_content)
-                    else:
-                        if attempt == 2:
-                            logger.error("Failed to generate valid JSON after 3 attempts")
-                            return json.dumps({"error": "Failed to generate valid JSON after 3 attempts"})
-                except Exception as e:
-                    if attempt == 2:
-                        logger.error(f"Content generation failed: {e}")
-                        return json.dumps({"error": f"Content generation failed: {str(e)}"})
+            if is_pdf_mode:
+                logger.info("Creating PDF summary TikTok script")
+                return self._create_pdf_summary_script(data)
+            else:
+                logger.info("Creating regular TikTok script")
+                return self._create_regular_script(data)
 
         except Exception as e:
             logger.error(f"Content creation tool failed: {e}")
             return json.dumps({"error": f"Content creation tool failed: {str(e)}"})
 
+    def _create_pdf_summary_script(self, data: Dict) -> str:
+        """Create TikTok script specifically for PDF summarization"""
+        logger = logging.getLogger('ContentCreationTool')
+
+        topic = data.get("topic", "")
+        pdf_content = data.get("pdf_content", "")
+        main_insights = data.get("main_insights", [])
+        surprising_facts = data.get("surprising_facts", [])
+
+        # Extract author names from PDF content
+        author_names = self._extract_author_names(pdf_content)
+
+        # Get tone settings
+        tone_modifier = config.TONE_MODIFIER
+        tone_description = config.TONE_DESCRIPTION
+        tone_value = config.TONE_VALUE
+
+        logger.info(f"Creating PDF summary with tone: {tone_description} (value: {tone_value:.2f})")
+        if author_names:
+            logger.info(f"Extracted authors: {', '.join(author_names)}")
+
+        # FIXED: Use the correct PDF prompt with proper formatting
+        prompt = PDF_CONTENT_CREATION_PROMPT.format(
+            topic=topic,
+            tone_modifier=tone_modifier,
+            tone_description=tone_description,
+            pdf_content=pdf_content[:2000],  # Limit content size
+            main_insights=str(main_insights),
+            surprising_facts=str(surprising_facts)
+        )
+
+        return self._generate_script_with_prompt(prompt, tone_description, is_pdf=True)
+
+    def _extract_author_names(self, pdf_content: str) -> List[str]:
+        """Extract potential author names from PDF content"""
+        import re
+
+        authors = []
+
+        # Common patterns for author names in academic papers
+        patterns = [
+            # "Author Name1, Author Name2" format
+            r'(?:Authors?|By):?\s*([A-Z][a-z]+ [A-Z][a-z]+(?:,\s*[A-Z][a-z]+ [A-Z][a-z]+)*)',
+            # Names at beginning of document
+            r'^([A-Z][a-z]+ [A-Z][a-z]+(?:,\s*[A-Z][a-z]+ [A-Z][a-z]+)*)',
+            # Names followed by affiliation patterns
+            r'([A-Z][a-z]+ [A-Z][a-z]+)(?:\s*[,\d]|\s*\n|\s*Department|\s*University|\s*Institute)',
+        ]
+
+        # Look in first 1000 characters where authors are typically mentioned
+        text_start = pdf_content[:1000]
+
+        for pattern in patterns:
+            matches = re.findall(pattern, text_start, re.MULTILINE)
+            for match in matches:
+                # Split by comma and clean up
+                names = [name.strip() for name in match.split(',')]
+                for name in names:
+                    # Basic validation: name should have 2+ words, reasonable length
+                    if (len(name.split()) >= 2 and
+                        len(name) < 50 and
+                        name not in authors and
+                        not any(word.lower() in ['abstract', 'university', 'department', 'institute'] for word in name.split())):
+                        authors.append(name)
+
+        # Limit to first 3 authors to keep it concise
+        return authors[:3]
+
+    def _create_regular_script(self, data: Dict) -> str:
+        """Create regular TikTok script for trending topics"""
+        topic = data.get("topic", "")
+        trends = data.get("trends", [])
+        keywords = data.get("keywords", [])
+        hooks = data.get("hooks", [])
+        formats = data.get("formats", [])
+
+        # Get tone settings
+        tone_modifier = config.TONE_MODIFIER
+        tone_description = config.TONE_DESCRIPTION
+
+        trend_text = ", ".join(trends[:6]) if trends else ""
+        keyword_text = ", ".join(keywords[:12]) if keywords else ""
+        hook_text = " | ".join(hooks[:5]) if hooks else ""
+        format_text = " | ".join(formats[:4]) if formats else ""
+
+        prompt = CONTENT_CREATION_PROMPT.format(
+            topic=topic,
+            tone_modifier=tone_modifier,
+            tone_description=tone_description,
+            trend_text=trend_text,
+            keyword_text=keyword_text,
+            hook_text=hook_text,
+            format_text=format_text
+        )
+
+        return self._generate_script_with_prompt(prompt, tone_description, is_pdf=False)
+
+    def _generate_script_with_prompt(self, prompt: str, tone_description: str, is_pdf: bool = False) -> str:
+        """Generate script using the LLM with the given prompt"""
+        logger = logging.getLogger('ContentCreationTool')
+
+        for attempt in range(3):
+            try:
+                response = self._llm.invoke(prompt)
+                content = self._extract_json(response)
+                if content:
+                    validated_content = self._validate_content(content, tone_description, is_pdf)
+                    content_type = "PDF summary" if is_pdf else "regular content"
+                    logger.info(
+                        f"Script generated successfully for {content_type} with tone: {validated_content.get('tone_applied', 'unknown')}")
+                    return json.dumps(validated_content)
+                else:
+                    if attempt == 2:
+                        logger.error("Failed to generate valid JSON after 3 attempts")
+                        return json.dumps({"error": "Failed to generate valid JSON after 3 attempts"})
+            except Exception as e:
+                if attempt == 2:
+                    logger.error(f"Content generation failed: {e}")
+                    return json.dumps({"error": f"Content generation failed: {str(e)}"})
+
     def _extract_json(self, response: str) -> Optional[Dict]:
+        """Extract JSON from LLM response"""
         start = response.find('{')
         end = response.rfind('}') + 1
         if start != -1 and end > start:
@@ -201,16 +288,27 @@ class ContentCreationTool(BaseTool):
                 pass
         return None
 
-    def _validate_content(self, content: Dict, tone_description: str) -> Dict[str, Any]:
-        video_length = content.get('video_length', 35)
+    def _validate_content(self, content: Dict, tone_description: str, is_pdf: bool = False) -> Dict[str, Any]:
+        """Validate and enhance the generated content"""
+        video_length = content.get('video_length', 45 if is_pdf else 35)
         try:
             video_length = max(config.MIN_VIDEO_LENGTH, min(int(video_length), config.MAX_VIDEO_LENGTH))
         except:
-            video_length = 35
+            video_length = 45 if is_pdf else 35
 
         script_text = content.get('script_text', '')
         if not script_text:
             raise Exception("No script text generated")
+
+        # Enhanced validation for PDF content
+        if is_pdf:
+            # Check if script mentions document/research/findings (PDF-appropriate language)
+            pdf_indicators = ['document', 'research', 'study', 'findings', 'reveals', 'shows', 'according to']
+            has_pdf_context = any(indicator in script_text.lower() for indicator in pdf_indicators)
+
+            if not has_pdf_context and len(script_text) > 50:
+                # Add PDF context if missing
+                script_text = f"This document reveals something incredible. {script_text}"
 
         return {
             "video_length": video_length,
@@ -221,7 +319,8 @@ class ContentCreationTool(BaseTool):
             "trending_elements": content.get('trending_elements', []),
             "estimated_words": content.get('estimated_words', len(script_text.split())),
             "tone_applied": content.get('tone_applied', tone_description),
-            "tone_value": config.TONE_VALUE
+            "tone_value": config.TONE_VALUE,
+            "content_type": content.get('content_type', 'pdf_summary' if is_pdf else 'regular')
         }
 
 

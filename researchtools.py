@@ -137,6 +137,35 @@ class PDFExtractionTool(BaseTool):
 
         return text.strip()
 
+    def _extract_pdf_local(self, pdf_path: str) -> str:
+        """Extract text from local PDF file"""
+        logger = logging.getLogger('PDFExtractionTool')
+        logger.info(f"Extracting text from local PDF: {pdf_path}")
+
+        if PDF_LIB is None:
+            return "Error: No PDF library available. Install PyPDF2 or pdfplumber."
+
+        try:
+            if not os.path.exists(pdf_path):
+                return f"Error: PDF file not found: {pdf_path}"
+
+            # Extract text using available library
+            if PDF_LIB == "PyPDF2":
+                text = self._extract_with_pypdf2(pdf_path)
+            else:  # pdfplumber
+                text = self._extract_with_pdfplumber(pdf_path)
+
+            logger.info(f"Successfully extracted {len(text)} characters from local PDF")
+
+            # Limit text length for LLM processing
+            if len(text) > 15000:
+                text = text[:15000] + "\n\n[Text truncated - showing first 15000 characters]"
+
+            return text
+
+        except Exception as e:
+            logger.error(f"Local PDF extraction failed: {e}")
+            return f"Error extracting PDF: {str(e)}"
 
 class ArxivFullTextTool(BaseTool):
     """Search ArXiv and get full text of papers by downloading PDFs"""

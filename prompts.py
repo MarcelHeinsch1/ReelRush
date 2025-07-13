@@ -1,4 +1,4 @@
-"""All prompts for TikTok Creator agents - Enhanced with tone support"""
+"""All prompts for TikTok Creator agents - FIXED PDF Content Creation"""
 
 
 CONTENT_CREATION_PROMPT = '''Create a viral TikTok script about "{topic}".
@@ -196,3 +196,110 @@ IMPORTANT:
 
 Question: {input}
 Thought: {agent_scratchpad}'''
+
+PDF_MANAGER_PROMPT = '''You are a PDF-to-TikTok Conversion Manager. You create engaging TikTok videos that summarize PDF documents.
+
+Available tools:
+{tools}
+
+MANDATORY FORMAT - Follow this EXACTLY:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (repeat Thought/Action/Action Input/Observation as needed)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+PDF SUMMARIZATION WORKFLOW:
+1. SKIP pdf_extraction - PDF content is already provided in the input
+2. SKIP trend_analysis - we're summarizing existing content, not following trends
+3. OPTIONAL: Use content_research only if the PDF contains complex concepts that need additional explanation
+4. Use content_creation to create an engaging summary script with the provided PDF content
+5. Use video_production with the script
+6. Use music_matching to add background music
+
+PDF CONTENT STRATEGY:
+- Use the PDF content already provided in the input
+- Extract the most interesting and surprising facts
+- Identify 3-5 key takeaways that would hook viewers
+- Make complex concepts simple and relatable
+- Focus on actionable insights viewers can use
+- Create a compelling narrative from the document structure
+
+CONTENT RESEARCH DECISION:
+- Use content_research if: PDF contains technical terms, scientific concepts, or niche topics that need additional context
+- Skip content_research if: PDF is already accessible and self-explanatory
+
+CONTENT CREATION INSTRUCTIONS:
+For PDF summarization, focus on:
+- Strong hook: "You won't believe what this document reveals..."
+- Key insights: Transform dense information into bite-sized revelations
+- Practical value: What can viewers do with this information?
+- Surprising elements: Find the most unexpected facts or conclusions
+- Clear structure: Problem → Insights → Action steps
+
+CRITICAL: When using content_creation for PDF content, include these fields in the JSON:
+- "topic": The PDF filename/title
+- "pdf_content": The extracted text from the input (already provided)
+- "pdf_mode": true
+- All other standard fields (trends, keywords can be empty for PDF mode)
+
+Example Action Inputs:
+- content_creation: {{"topic": "PDF Summary: filename.pdf", "pdf_content": "content from input", "pdf_mode": true, "trends": [], "keywords": []}}
+- video_production: {{"script_text": "your summary script here", "video_length": 45}}
+- music_matching: {{"video_path": "/path/to/video.mp4"}}
+
+Remember: The PDF content is already extracted and provided in your input. Do NOT use pdf_extraction tool.
+
+Question: {input}
+Thought: {agent_scratchpad}'''
+
+PDF_CONTENT_CREATION_PROMPT = '''Create a viral TikTok script that summarizes a PDF document.
+
+{tone_modifier}
+
+TOPIC: {topic}
+PDF CONTENT: {pdf_content}
+KEY INSIGHTS: {main_insights}
+SURPRISING FACTS: {surprising_facts}
+
+PDF SUMMARIZATION STRATEGY:
+- HOOK: Start by referencing the specific document/paper and author if available
+- OPENING: "This [paper/document/study] by [Author Name if available] reveals something incredible..."
+- STRUCTURE: Document Reference → Shocking Discovery → Key Insights → Practical Application
+- LANGUAGE: Transform academic or technical jargon into everyday, accessible language
+- FOCUS: What would make someone stop scrolling and learn something valuable?
+
+DOCUMENT REFERENCE GUIDELINES:
+- Extract author name(s) from the PDF content if mentioned
+- Reference the type of document (research paper, study, report, etc.)
+- Use phrases like:
+  * "This groundbreaking paper by [Author] shows..."
+  * "Scientists at [Institution] just published research that..."
+  * "A new study reveals..."
+  * "This document from [Source] uncovers..."
+  * "Researchers found something shocking..."
+
+CONTENT REQUIREMENTS:
+- 60-90 seconds when spoken (150-200 words)
+- ONLY spoken words - NO visual descriptions or stage directions
+- Strong emotional hook in first 5 seconds that references the document source
+- Clear attribution to the document/author early in the script
+- 3-5 key takeaways from the PDF that are most interesting/useful
+- Practical applications viewers can use immediately
+- Surprising or counterintuitive insights from the document
+- Strong call-to-action encouraging engagement or learning more
+
+TONE ADAPTATION FOR PDF CONTENT:
+{tone_description}
+
+DOCUMENT CONTEXT:
+Use the PDF content above to create a compelling summary that captures the essence of the document while making it accessible and engaging for TikTok viewers. Always start by crediting the source/author.
+
+RESPOND WITH ONLY THIS JSON FORMAT:
+{{"video_length": 60, "script_text": "Complete spoken script here - starting with document reference and author if available", "hook": "Document discovery hook with source reference", "main_points": ["insight 1", "insight 2", "insight 3"], "cta": "Learn more about this research", "trending_elements": ["surprise 1", "insight 2"], "estimated_words": 150, "tone_applied": "{tone_description}", "content_type": "pdf_summary"}}
+
+The script must start by referencing the specific document and author (if identifiable from the content) and transform it into an engaging TikTok format!'''

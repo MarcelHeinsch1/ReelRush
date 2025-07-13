@@ -191,6 +191,98 @@
             color: #667eea;
         }
 
+        /* PDF Upload Styles */
+        .pdf-upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            margin-bottom: 20px;
+        }
+
+        .pdf-upload-area:hover {
+            border-color: #764ba2;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+        }
+
+        .pdf-upload-area.dragover {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .pdf-upload-area.uploading {
+            border-color: #ffc107;
+            background: #fffbf0;
+            cursor: not-allowed;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.7;
+        }
+
+        .upload-text {
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .upload-progress {
+            margin-bottom: 20px;
+        }
+
+        .upload-status {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .pdf-info {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .pdf-preview {
+            margin-bottom: 20px;
+        }
+
+        .pdf-preview h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .pdf-preview-text {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            white-space: pre-wrap;
+        }
+
+        .pdf-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .pdf-actions .btn {
+            min-width: 180px;
+        }
+
         .btn {
             padding: 15px 30px;
             font-size: 16px;
@@ -479,6 +571,13 @@
             display: block;
         }
 
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -503,6 +602,19 @@
 
             .models-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .pdf-upload-area {
+                padding: 25px 15px;
+            }
+
+            .pdf-actions {
+                flex-direction: column;
+            }
+
+            .pdf-actions .btn {
+                min-width: auto;
+                width: 100%;
             }
         }
     </style>
@@ -644,14 +756,50 @@
                     </div>
                 </div>
 
-                <!-- PDF Upload Panel (Placeholder for next step) -->
+                <!-- PDF Upload Panel -->
                 <div class="settings-panel" id="pdfPanel">
                     <div class="setting-group">
                         <div class="setting-label">
-                            📄 PDF Document Upload
+                            📄 PDF Document Upload & Summarization
                         </div>
+
+                        <!-- PDF Upload Area -->
+                        <div class="pdf-upload-area" id="pdfUploadArea" onclick="document.getElementById('pdfFileInput').click()">
+                            <div class="upload-icon">📄</div>
+                            <div class="upload-text">
+                                <strong>Click to upload PDF</strong><br>
+                                <span style="font-size: 0.9em; color: #666;">Maximum file size: 16MB</span>
+                            </div>
+                            <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;" onchange="handlePdfUpload(event)">
+                        </div>
+
+                        <!-- Upload Progress -->
+                        <div class="upload-progress" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="uploadProgressBar"></div>
+                            </div>
+                            <div class="upload-status" id="uploadStatus">Uploading...</div>
+                        </div>
+
+                        <!-- PDF Info Display -->
+                        <div class="pdf-info" id="pdfInfo" style="display: none;">
+                            <div class="pdf-preview">
+                                <h4>📋 PDF Preview:</h4>
+                                <div class="pdf-preview-text" id="pdfPreviewText"></div>
+                            </div>
+                            <div class="pdf-actions">
+                                <button class="btn btn-primary" onclick="createVideoFromPdf()" id="createPdfVideoBtn">
+                                    🎬 Create TikTok Summary
+                                </button>
+                                <button class="btn-small btn-secondary" onclick="clearPdfUpload()">
+                                    🗑️ Remove PDF
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="help-text">
-                            PDF-Upload und -Zusammenfassung wird in der nächsten Version implementiert.
+                            Lade ein PDF-Dokument hoch und erstelle automatisch ein TikTok-Video, das die wichtigsten Punkte zusammenfasst.
+                            Perfekt für Research Papers, Reports oder andere Dokumente.
                         </div>
                     </div>
                 </div>
@@ -687,6 +835,7 @@
     <script>
         let activeJobs = new Set();
         let jobsData = new Map();
+        let currentPdfData = null;
         let currentSettings = {
             tone: 0.5, // 0 = humorous, 1 = informative
             models: {
@@ -861,6 +1010,197 @@
             toneValueElement.textContent = description;
         }
 
+        // PDF Upload Functionality
+        function handlePdfUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file
+            if (file.type !== 'application/pdf') {
+                alert('Bitte wählen Sie eine PDF-Datei aus.');
+                return;
+            }
+
+            if (file.size > 16 * 1024 * 1024) { // 16MB
+                alert('Die Datei ist zu groß. Maximale Größe: 16MB');
+                return;
+            }
+
+            uploadPdf(file);
+        }
+
+        async function uploadPdf(file) {
+            const uploadArea = document.getElementById('pdfUploadArea');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const uploadProgressBar = document.getElementById('uploadProgressBar');
+            const pdfInfo = document.getElementById('pdfInfo');
+
+            // Show upload UI
+            uploadArea.classList.add('uploading');
+            uploadArea.style.display = 'none';
+            uploadProgress.style.display = 'block';
+            pdfInfo.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('pdf', file);
+
+            try {
+                // Simulate upload progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 30;
+                    if (progress > 90) progress = 90;
+                    uploadProgressBar.style.width = `${progress}%`;
+                    uploadStatus.textContent = `Uploading and processing PDF... ${Math.round(progress)}%`;
+                }, 300);
+
+                const response = await fetch('/api/upload-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                uploadProgressBar.style.width = '100%';
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success
+                    currentPdfData = data.pdf_info;
+
+                    uploadStatus.textContent = '✅ PDF successfully processed!';
+
+                    // Show PDF info after brief delay
+                    setTimeout(() => {
+                        uploadProgress.style.display = 'none';
+                        showPdfInfo(data);
+                    }, 1000);
+
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+
+            } catch (error) {
+                // Error handling
+                uploadStatus.textContent = `❌ Upload failed: ${error.message}`;
+                uploadProgressBar.style.width = '0%';
+
+                setTimeout(() => {
+                    uploadProgress.style.display = 'none';
+                    uploadArea.style.display = 'block';
+                    uploadArea.classList.remove('uploading');
+                }, 2000);
+
+                console.error('PDF upload error:', error);
+            }
+        }
+
+        function showPdfInfo(data) {
+            const pdfInfo = document.getElementById('pdfInfo');
+            const pdfPreviewText = document.getElementById('pdfPreviewText');
+
+            // Update preview text
+            pdfPreviewText.textContent = data.preview || 'No preview available';
+
+            // Show PDF info
+            pdfInfo.style.display = 'block';
+
+            // Update upload area to show success
+            const uploadArea = document.getElementById('pdfUploadArea');
+            uploadArea.classList.remove('uploading');
+            uploadArea.innerHTML = `
+                <div class="upload-icon">✅</div>
+                <div class="upload-text">
+                    <strong>${data.pdf_info.filename}</strong><br>
+                    <span style="font-size: 0.9em; color: #666;">
+                        ${(data.pdf_info.text_length || 0).toLocaleString()} characters extracted
+                    </span>
+                </div>
+            `;
+            uploadArea.style.display = 'block';
+            uploadArea.onclick = null; // Disable click
+        }
+
+        async function createVideoFromPdf() {
+            if (!currentPdfData) {
+                alert('No PDF data available');
+                return;
+            }
+
+            const createBtn = document.getElementById('createPdfVideoBtn');
+            createBtn.disabled = true;
+            createBtn.innerHTML = 'Creating... <span class="loader"></span>';
+
+            try {
+                const payload = {
+                    pdf_path: currentPdfData.file_path,
+                    settings: currentSettings
+                };
+
+                const response = await fetch('/api/create-pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success - add job to active list
+                    activeJobs.add(data.job_id);
+                    updateJobsList();
+
+                    // Close PDF panel
+                    toggleSetting('pdf');
+
+                    // Show success message
+                    alert(`✅ PDF Video creation started!\nTopic: ${data.topic}`);
+
+                } else {
+                    alert('Error: ' + data.error);
+                }
+
+            } catch (error) {
+                alert('Failed to create PDF video: ' + error.message);
+            } finally {
+                createBtn.disabled = false;
+                createBtn.textContent = '🎬 Create TikTok Summary';
+            }
+        }
+
+        function clearPdfUpload() {
+            if (!confirm('Remove uploaded PDF? You will need to upload it again.')) {
+                return;
+            }
+
+            // Reset all PDF UI elements
+            currentPdfData = null;
+
+            const uploadArea = document.getElementById('pdfUploadArea');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const pdfInfo = document.getElementById('pdfInfo');
+            const fileInput = document.getElementById('pdfFileInput');
+
+            // Reset upload area
+            uploadArea.innerHTML = `
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">
+                    <strong>Click to upload PDF</strong><br>
+                    <span style="font-size: 0.9em; color: #666;">Maximum file size: 16MB</span>
+                </div>
+            `;
+            uploadArea.onclick = () => document.getElementById('pdfFileInput').click();
+            uploadArea.classList.remove('uploading');
+
+            // Hide other elements
+            uploadProgress.style.display = 'none';
+            pdfInfo.style.display = 'none';
+
+            // Reset file input
+            fileInput.value = '';
+        }
+
         async function createVideo() {
             const topic = document.getElementById('topicInput').value.trim();
             if (!topic) {
@@ -976,10 +1316,15 @@
                             `;
                         }
 
-                        // Show tone and model settings if available
+                        // Show tone, model settings, and PDF mode if available
                         let settingsInfo = '';
                         if (job.settings) {
                             let infoParts = [];
+
+                            // PDF mode indicator
+                            if (job.settings.pdf_mode) {
+                                infoParts.push('📄 PDF Mode');
+                            }
 
                             // Tone info
                             if (typeof job.settings.tone !== 'undefined') {
@@ -1088,6 +1433,56 @@
                 alert('Cleanup failed: ' + error.message);
             }
         }
+
+        // Drag and drop functionality for PDF upload
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('pdfUploadArea');
+
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // Highlight drop area when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.classList.remove('dragover');
+                }, false);
+            });
+
+            // Handle dropped files
+            uploadArea.addEventListener('drop', handleDrop, false);
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0) {
+                    const file = files[0];
+                    if (file.type === 'application/pdf') {
+                        if (file.size <= 16 * 1024 * 1024) { // 16MB
+                            uploadPdf(file);
+                        } else {
+                            alert('Die Datei ist zu groß. Maximale Größe: 16MB');
+                        }
+                    } else {
+                        alert('Bitte laden Sie eine PDF-Datei hoch.');
+                    }
+                }
+            }
+        });
 
         // Initial load and periodic updates
         updateJobsList();

@@ -1,4 +1,4 @@
-"""Web Frontend for TikTok Creator - Enhanced with Settings Support"""
+"""Web Frontend for TikTok Creator - FIXED PDF Integration"""
 
 import os
 import json
@@ -10,13 +10,21 @@ from flask_cors import CORS
 from datetime import datetime
 from typing import Dict, Optional
 import logging
+import tempfile
+import shutil
+from werkzeug.utils import secure_filename
+from pathlib import Path
 
+
+from researchtools import PDFExtractionTool, PDF_LIB
 # Import config with integrated ConfigManager
 from config import Config, ConfigManager
 from manager import ManagerAgent
 
 app = Flask(__name__)
 CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['PDF_UPLOAD_FOLDER'] = './uploads/pdfs'
 
 # Configure logging for web app
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +32,11 @@ logger = logging.getLogger('WebFrontend')
 
 # Store video creation jobs
 video_jobs = {}
+try:
+    os.makedirs(app.config['PDF_UPLOAD_FOLDER'], exist_ok=True)
+    print(f"✅ PDF upload directory created: {app.config['PDF_UPLOAD_FOLDER']}")
+except Exception as e:
+    print(f"❌ Failed to create PDF upload directory: {e}")
 
 
 class VideoCreationJob:
@@ -272,6 +285,255 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/api/upload-pdf', methods=['POST'])
+def upload_pdf():
+    """Upload and process PDF file"""
+    try:
+        # Check if PDF upload folder is configured
+        if 'PDF_UPLOAD_FOLDER' not in app.config:
+            app.config['PDF_UPLOAD_FOLDER'] = './uploads/pdfs'
+            os.makedirs(app.config['PDF_UPLOAD_FOLDER'], exist_ok=True)
+
+        if 'pdf' not in request.files:
+            return jsonify({"error": "No PDF file provided"}), 400
+
+        file = request.files['pdf']
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+
+        if not file.filename.lower().endswith('.pdf'):
+            return jsonify({"error": "Only PDF files are allowed"}), 400
+
+        # Save uploaded file
+        filename = secure_filename(file.filename)
+        timestamp = str(int(time.time()))
+        unique_filename = f"{timestamp}_{filename}"
+
+        # Ensure upload folder exists
+        upload_folder = app.config['PDF_UPLOAD_FOLDER']
+        os.makedirs(upload_folder, exist_ok=True)
+
+        file_path = os.path.join(upload_folder, unique_filename)
+
+        logger.info(f"Saving PDF to: {file_path}")
+        file.save(file_path)
+
+        # Verify file was saved
+        if not os.path.exists(file_path):
+            raise Exception(f"Failed to save file to {file_path}")
+
+        # Extract text from PDF
+        pdf_tool = PDFExtractionTool()
+        extracted_text = pdf_tool._extract_pdf_local(file_path)
+
+        if extracted_text.startswith("Error"):
+            return jsonify({"error": extracted_text}), 500
+
+        # Store PDF info for video creation
+        pdf_info = {
+            "filename": filename,
+            "file_path": file_path,
+            "extracted_text": extracted_text[:5000],  # Limit for response
+            "text_length": len(extracted_text),
+            "upload_time": datetime.now().isoformat()
+        }
+
+        logger.info(f"PDF processed successfully: {filename}, {len(extracted_text)} characters")
+
+        return jsonify({
+            "message": "PDF uploaded and processed successfully",
+            "pdf_info": pdf_info,
+            "preview": extracted_text[:500] + "..." if len(extracted_text) > 500 else extracted_text
+        })
+
+    except Exception as e:
+        logger.error(f"PDF upload failed: {e}")
+        return jsonify({"error": f"PDF processing failed: {str(e)}"}), 500
+
+
+@app.route('/api/create-pdf', methods=['POST'])
+def create_video_from_pdf():
+    """Create video from uploaded PDF - FIXED implementation"""
+    data = request.json
+    pdf_path = data.get('pdf_path', '').strip()
+    settings = data.get('settings', {})
+
+    if not pdf_path or not os.path.exists(pdf_path):
+        return jsonify({"error": "PDF file not found"}), 400
+
+    # Validate settings (same as create_video)
+    tone = settings.get('tone', 0.5)
+    if not (0 <= tone <= 1):
+        return jsonify({"error": "Tone must be between 0 and 1"}), 400
+
+    # Extract filename for topic
+    pdf_filename = os.path.basename(pdf_path)
+    topic = f"PDF Summary: {pdf_filename}"
+
+    # FIXED: Create new job with PDF settings properly configured
+    job_id = str(uuid.uuid4())
+    job_settings = settings.copy()
+    job_settings['pdf_mode'] = True
+    job_settings['pdf_path'] = pdf_path  # Store PDF path in settings
+
+    job = VideoCreationJob(job_id, topic, job_settings)
+    video_jobs[job_id] = job
+
+    # Log PDF processing
+    logger.info(f"Creating video from PDF: {pdf_filename}")
+    job.add_log(f"PDF Mode: Processing {pdf_filename}")
+    job.add_log(f"Settings - Tone: {tone:.2f} ({'Humorous' if tone < 0.5 else 'Informative'})")
+
+    # FIXED: Start PDF video creation with the corrected function
+    thread = threading.Thread(target=create_pdf_video_with_progress, args=(job,))
+    thread.start()
+
+    return jsonify({
+        "job_id": job_id,
+        "message": "PDF video creation started",
+        "topic": topic,
+        "settings": job_settings
+    })
+
+
+def create_pdf_video_with_progress(job: VideoCreationJob):
+    """FIXED: Create video from PDF with proper progress tracking"""
+    try:
+        job.status = "initializing"
+        job.update_progress("Initializing PDF video creation", 5)
+
+        # FIXED: Create config with PDF mode and path
+        job_config = Config(topic=job.topic, job_id=job.job_id, settings=job.settings)
+        ConfigManager.set_config(job_config)
+
+        # FIXED: Initialize manager with PDF mode
+        manager = ManagerAgent(mode="pdf")
+        job.update_progress("PDF analysis system initialized", 10)
+
+        job.status = "processing"
+        creation_timestamp = datetime.now()
+
+        # Get PDF path from settings
+        pdf_path = job.settings.get('pdf_path')
+        if not pdf_path or not os.path.exists(pdf_path):
+            raise Exception("PDF file not found in job settings")
+
+        job.update_progress("Extracting text from PDF", 20)
+
+        # Extract PDF text using the tool
+        pdf_tool = PDFExtractionTool()
+        extracted_text = pdf_tool._extract_pdf_local(pdf_path)
+
+        if extracted_text.startswith("Error"):
+            raise Exception(f"PDF extraction failed: {extracted_text}")
+
+        job.add_log(f"Extracted {len(extracted_text)} characters from PDF")
+
+        # Simulate progress stages for PDF processing
+        def simulate_pdf_progress():
+            stages = [
+                (30, "Analyzing PDF content structure"),
+                (40, "Identifying key concepts and themes"),
+                (50, "Creating engaging summary script"),
+                (60, "Generating AI narration"),
+                (70, "Processing video templates"),
+                (80, "Adding dynamic subtitles"),
+                (90, "Adding background music"),
+                (95, "Finalizing PDF summary video")
+            ]
+
+            start = time.time()
+            for target_progress, stage in stages:
+                if job.status != "processing":
+                    break
+                wait_time = (target_progress / 100) * 120 - (time.time() - start)
+                if wait_time > 0:
+                    time.sleep(min(wait_time, 8))
+                if job.status == "processing":
+                    job.update_progress(stage, target_progress)
+
+        # Start progress simulation
+        progress_thread = threading.Thread(target=simulate_pdf_progress)
+        progress_thread.daemon = True
+        progress_thread.start()
+
+        # FIXED: Create video from PDF using the manager agent
+        pdf_filename = os.path.basename(pdf_path)
+
+        # The manager agent will handle PDF extraction internally
+        # Just pass the topic, the PDF path is already in the config
+        start_time = time.time()
+        result = manager.create_viral_video(topic=job.topic)
+        duration = time.time() - start_time
+
+        job.status = "finalizing"
+
+        # Find the video file (same logic as regular video creation)
+        video_path = None
+
+        if result.get("status") == "success":
+            output_text = result.get("agent_output", "")
+
+            # Look for video paths in output
+            import re
+            video_patterns = [
+                r'"video_with_music":\s*"([^"]+)"',
+                r'"video_path":\s*"([^"]+)"',
+                r'Video:\s*([^\s]+\.mp4)',
+                r'File:\s*([^\s]+\.mp4)'
+            ]
+
+            for pattern in video_patterns:
+                matches = re.findall(pattern, output_text)
+                if matches:
+                    for match in reversed(matches):
+                        if os.path.exists(match):
+                            video_path = match
+                            break
+                if video_path:
+                    break
+
+        # Fallback: check output directory
+        if not video_path:
+            output_dir = "./output"
+            if os.path.exists(output_dir):
+                candidates = []
+                for f in os.listdir(output_dir):
+                    if f.endswith('.mp4'):
+                        file_path = os.path.join(output_dir, f)
+                        file_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+                        if file_time >= creation_timestamp:
+                            candidates.append((file_path, file_time, 'music' in f))
+
+                if candidates:
+                    candidates.sort(key=lambda x: (x[2], x[1]), reverse=True)
+                    video_path = candidates[0][0]
+
+        if video_path and os.path.exists(video_path):
+            job.video_path = os.path.abspath(video_path)
+            job.status = "completed"
+            job.progress = 100
+            job.completed_at = datetime.now()
+
+            size_mb = os.path.getsize(job.video_path) / (1024 * 1024)
+            job.update_progress("PDF video completed!", 100)
+            job.add_log(f"Duration: {duration:.1f}s | Size: {size_mb:.1f}MB")
+            job.add_log(f"Source: {os.path.basename(pdf_path)}")
+
+            ConfigManager.clear_config()
+        else:
+            ConfigManager.clear_config()
+            raise Exception("PDF video file not found after creation")
+
+    except Exception as e:
+        ConfigManager.clear_config()
+        job.status = "failed"
+        job.error = str(e)
+        job.completed_at = datetime.now()
+        job.add_log(f"Error: {str(e)}")
+        logger.error(f"PDF video creation failed for job {job.job_id}: {e}")
+
+
 @app.route('/api/create', methods=['POST'])
 def create_video():
     """Start video creation job with enhanced settings support"""
@@ -476,6 +738,7 @@ if __name__ == '__main__':
     print("=" * 50)
     print("New Features:")
     print("✨ Content Tone Control (Humorous ↔ Informative)")
+    print("📄 PDF Document Summarization")
     print("🎯 Advanced Settings Panel")
     print("📊 Enhanced Job Tracking")
     print("=" * 50)

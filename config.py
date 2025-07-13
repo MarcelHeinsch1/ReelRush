@@ -148,7 +148,7 @@ TONE: VERY INFORMATIVE/EDUCATIONAL (Focus: Deep Knowledge)
         """Get model for specific agent type"""
         models = self.settings.get('models', {})
         defaults = {
-            'manager': 'gemma3:12b',
+            'manager': 'qwen3:30b',
             'content': 'gemma3:12b',
             'trend': 'qwen3:30b',
             'research': 'qwen3:30b',
