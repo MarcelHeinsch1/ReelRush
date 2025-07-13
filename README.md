@@ -54,10 +54,10 @@ ollama serve
 ### 4. Vosk Speech Recognition Model
 ```bash
 # Download Vosk model for subtitle generation
-mkdir -p vosk-model-small-en-us-0.15
-cd vosk-model-small-en-us-0.15
-wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
-unzip vosk-model-small-en-us-0.15.zip
+mkdir -p vosk-model-en-us-0.22
+cd vosk-model-en-us-0.22
+wget https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip
+unzip vosk-model-en-us-0.22.zip
 ```
 or just download it
 
@@ -263,7 +263,7 @@ pip install PyPDF2 pdfplumber
 **Vosk Model Error**
 ```bash
 # Check Vosk model path
-ls -la vosk-model-small-en-us-0.15/
+ls -la vosk-model-en-us-0.22/
 ```
 
 ### Debug Mode
