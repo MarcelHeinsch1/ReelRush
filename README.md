@@ -4,7 +4,7 @@ An advanced Multi-Agent system for automatic creation of viral TikTok videos wit
 
 ## ✨ Features
 
-### 🤖 Multi-Agent Architecture
+### Multi-Agent Architecture
 - **Manager Agent**: Orchestrates the entire workflow
 - **Trend Analysis Agent**: Analyzes viral trends and keywords
 - **Content Research Agent**: Researches content from multiple sources
@@ -12,13 +12,13 @@ An advanced Multi-Agent system for automatic creation of viral TikTok videos wit
 - **Video Production Agent**: Generates videos with AI narration and subtitles
 - **Music Matching Agent**: Adds fitting background music
 
-### 📊 Intelligent Content Creation
+### Intelligent Content Creation
 - **Tone Control**: Adjustable content style (Humorous ↔ Informative)
 - **Trend Integration**: Automatic incorporation of current trends
 - **Multi-Source Research**: Web Search, ArXiv Papers, Wikipedia, YouTube
 - **PDF Summarization**: Automatic summarization of PDF documents
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 - **Python 3.8+**
@@ -83,7 +83,7 @@ brew install ffmpeg
 # Download FFmpeg from https://ffmpeg.org
 ```
 
-## 🎯 Usage
+## Usage
 
 ### Web Interface (Recommended)
 ```bash
@@ -107,7 +107,7 @@ Download the benchmark and
 python gaia_benchmark.py --file ./(path)/metadata.jsonl 
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### Tone Settings
 - **0.0 - 0.2**: Very humorous/meme-like
@@ -132,7 +132,7 @@ MAX_VIDEO_LENGTH = 90  # seconds
 VIDEO_TEMPLATES_DIR = "./videos/templates"
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 tiktok-creator/
@@ -194,7 +194,7 @@ GET /api/download/{job_id}
 
 
 
-## 🛠️ Advanced Features
+## Advanced Features
 
 ### PDF Processing
 - **PyPDF2** or **pdfplumber** for text extraction
@@ -214,7 +214,7 @@ GET /api/download/{job_id}
 - **Emotional Hooks**: AI-generated attention triggers
 - **Call-to-Action**: Optimized engagement strategies
 
-## 📊 Performance Monitoring
+## Performance Monitoring
 
 ### Logging System
 ```python
@@ -232,7 +232,7 @@ def my_agent_function():
 - Success rates
 - Error tracking
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -274,7 +274,7 @@ python web_app.py
 ```
 
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **LangChain** for the agent framework
 - **Ollama** for local LLM inference
