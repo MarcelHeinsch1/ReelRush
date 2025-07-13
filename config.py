@@ -5,7 +5,7 @@ import threading
 import time
 import os
 import re
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 
 @dataclass

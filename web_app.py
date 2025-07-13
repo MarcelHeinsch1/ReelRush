@@ -1,19 +1,17 @@
 """Web Frontend for TikTok Creator - FIXED PDF Integration"""
 
 import os
-import json
 import time
 import threading
 import uuid
-from flask import Flask, render_template, request, jsonify, send_file, url_for
+from flask import Flask, render_template, request, jsonify, send_file
 from flask_cors import CORS
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict
 import logging
-import tempfile
-import shutil
+
 from werkzeug.utils import secure_filename
-from pathlib import Path
+
 
 
 from researchtools import PDFExtractionTool, PDF_LIB

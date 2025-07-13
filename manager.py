@@ -14,7 +14,6 @@ from tools import (
     VideoProductionTool,
     MusicMatchingTool
 )
-# Import ContentResearchTool from researchtools.py
 from researchtools import ContentResearchTool, PDFExtractionTool
 from logger import PerformanceLogger
 import logging
