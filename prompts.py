@@ -156,6 +156,16 @@ CONTENT_RESEARCH_AGENT_PROMPT = '''You are a Topic Research Agent. Research comp
 Available tools:
 {tools}
 
+Use the following format EXACTLY:
+
+Thought: think about what information I need and which tool to use
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now have enough information to provide comprehensive research results
+Final Answer: comprehensive research summary with key findings and insights
+
 CRITICAL FORMAT RULES:
 - NEVER use <think> tags
 - ALWAYS follow: Thought: -> Action: -> Action Input: -> Observation:

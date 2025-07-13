@@ -143,21 +143,51 @@ TONE: VERY INFORMATIVE/EDUCATIONAL (Focus: Deep Knowledge)
 - Priority: 90% information, 10% engagement
 """
 
+    # Model configuration accessors
+    def get_model(self, agent_type: str) -> str:
+        """Get model for specific agent type"""
+        models = self.settings.get('models', {})
+        defaults = {
+            'manager': 'gemma3:12b',
+            'content': 'gemma3:12b',
+            'trend': 'qwen3:30b',
+            'research': 'qwen3:30b',
+            'video': 'qwen3:30b',
+            'music': 'qwen3:30b'
+        }
+        return models.get(agent_type, defaults.get(agent_type, 'gemma3:12b'))
+
+    # Dynamic model properties
+    @property
+    def MANAGER_AGENT_MODEL(self) -> str:
+        return self.get_model('manager')
+
+    @property
+    def CONTENT_CREATION_MODEL(self) -> str:
+        return self.get_model('content')
+
+    @property
+    def TREND_ANALYSIS_MODEL(self) -> str:
+        return self.get_model('trend')
+
+    @property
+    def CONTENT_RESEARCH_MODEL(self) -> str:
+        return self.get_model('research')
+
+    @property
+    def VIDEO_PRODUCTION_MODEL(self) -> str:
+        return self.get_model('video')
+
+    @property
+    def MUSIC_MATCHING_MODEL(self) -> str:
+        return self.get_model('music')
+
     # Video settings
     MIN_VIDEO_LENGTH: int = 30
     MAX_VIDEO_LENGTH: int = 90
 
     # LLM Configuration
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-
-    # Individual LLM models
-    agent = "gemma3:12b"
-    MANAGER_AGENT_MODEL: str = agent
-    CONTENT_CREATION_MODEL: str = agent
-    TREND_ANALYSIS_MODEL: str = "qwen3:30b"
-    CONTENT_RESEARCH_MODEL: str = "qwen3:30b"
-    VIDEO_PRODUCTION_MODEL: str = "qwen3:30b"
-    MUSIC_MATCHING_MODEL: str = "qwen3:30b"
 
 
 class ConfigManager:

@@ -405,11 +405,78 @@
             margin-top: 10px;
         }
 
-        .help-text {
+        .models-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .model-setting {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .model-label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            display: block;
             font-size: 0.9em;
-            color: #666;
-            margin-top: 8px;
-            line-height: 1.4;
+        }
+
+        .model-select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.3s;
+        }
+
+        .model-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .model-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .model-status {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .model-status.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+            display: block;
+        }
+
+        .model-status.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+            display: block;
+        }
+
+        .model-status.loading {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+            color: #0c5460;
+            display: block;
         }
 
         @media (max-width: 768px) {
@@ -434,8 +501,8 @@
                 gap: 10px;
             }
 
-            .settings-bar {
-                flex-wrap: wrap;
+            .models-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -492,15 +559,87 @@
                     </div>
                 </div>
 
-                <!-- Models Settings Panel (Placeholder for next step) -->
+                <!-- Models Settings Panel -->
                 <div class="settings-panel" id="modelsPanel">
                     <div class="setting-group">
                         <div class="setting-label">
                             🤖 AI Models Configuration
                         </div>
-                        <div class="help-text">
-                            Model-Auswahl wird in der nächsten Version implementiert.
+                        <div class="models-grid">
+                            <div class="model-setting">
+                                <label class="model-label">Manager Agent:</label>
+                                <select class="model-select" id="managerModel" onchange="updateModelSetting('manager', this.value)">
+                                    <option value="gemma3:12b">gemma3:12b (Default)</option>
+                                    <option value="qwen3:30b">qwen3:30b</option>
+                                    <option value="llama3:8b">llama3:8b</option>
+                                    <option value="mixtral:8x7b">mixtral:8x7b</option>
+                                    <option value="gemma3:8b">gemma3:8b</option>
+                                </select>
+                            </div>
+
+                            <div class="model-setting">
+                                <label class="model-label">Content Creation:</label>
+                                <select class="model-select" id="contentModel" onchange="updateModelSetting('content', this.value)">
+                                    <option value="gemma3:12b">gemma3:12b (Default)</option>
+                                    <option value="qwen3:30b">qwen3:30b</option>
+                                    <option value="llama3:8b">llama3:8b</option>
+                                    <option value="mixtral:8x7b">mixtral:8x7b</option>
+                                    <option value="gemma3:8b">gemma3:8b</option>
+                                </select>
+                            </div>
+
+                            <div class="model-setting">
+                                <label class="model-label">Trend Analysis:</label>
+                                <select class="model-select" id="trendModel" onchange="updateModelSetting('trend', this.value)">
+                                    <option value="qwen3:30b">qwen3:30b (Default)</option>
+                                    <option value="gemma3:12b">gemma3:12b</option>
+                                    <option value="llama3:8b">llama3:8b</option>
+                                    <option value="mixtral:8x7b">mixtral:8x7b</option>
+                                </select>
+                            </div>
+
+                            <div class="model-setting">
+                                <label class="model-label">Content Research:</label>
+                                <select class="model-select" id="researchModel" onchange="updateModelSetting('research', this.value)">
+                                    <option value="qwen3:30b">qwen3:30b (Default)</option>
+                                    <option value="gemma3:12b">gemma3:12b</option>
+                                    <option value="llama3:8b">llama3:8b</option>
+                                    <option value="mixtral:8x7b">mixtral:8x7b</option>
+                                </select>
+                            </div>
+
+                            <div class="model-setting">
+                                <label class="model-label">Video Production:</label>
+                                <select class="model-select" id="videoModel" onchange="updateModelSetting('video', this.value)">
+                                    <option value="qwen3:30b">qwen3:30b (Default)</option>
+                                    <option value="gemma3:12b">gemma3:12b</option>
+                                    <option value="llama3:8b">llama3:8b</option>
+                                    <option value="mixtral:8x7b">mixtral:8x7b</option>
+                                </select>
+                            </div>
+
+                            <div class="model-setting">
+                                <label class="model-label">Music Matching:</label>
+                                <select class="model-select" id="musicModel" onchange="updateModelSetting('music', this.value)">
+                                    <option value="qwen3:30b">qwen3:30b (Default)</option>
+                                    <option value="gemma3:12b">gemma3:12b</option>
+                                    <option value="llama3:8b">llama3:8b</option>
+                                    <option value="mixtral:8x7b">mixtral:8x7b</option>
+                                </select>
+                            </div>
                         </div>
+                        <div class="model-actions">
+                            <button class="btn-small btn-secondary" onclick="resetModelsToDefault()">
+                                🔄 Reset to Default
+                            </button>
+                            <button class="btn-small btn-secondary" onclick="checkOllamaModels()" id="checkModelsBtn">
+                                🔍 Check Available Models
+                            </button>
+                        </div>
+                        <div class="help-text">
+                            Wähle verschiedene Ollama-Modelle für jeden Agenten. Größere Modelle (30b) sind langsamer aber qualitativ besser, kleinere (8b) sind schneller.
+                        </div>
+                        <div class="model-status" id="modelStatus"></div>
                     </div>
                 </div>
 
@@ -549,27 +688,154 @@
         let jobsData = new Map();
         let currentSettings = {
             tone: 0.5, // 0 = humorous, 1 = informative
-            models: {},
+            models: {
+                manager: 'gemma3:12b',
+                content: 'gemma3:12b',
+                trend: 'qwen3:30b',
+                research: 'qwen3:30b',
+                video: 'qwen3:30b',
+                music: 'qwen3:30b'
+            },
             pdfFile: null
         };
 
         function toggleSetting(settingType) {
-            // Close all panels first
-            document.querySelectorAll('.settings-panel').forEach(panel => {
-                panel.classList.remove('active');
-            });
-            document.querySelectorAll('.setting-icon').forEach(icon => {
-                icon.classList.remove('active');
-            });
-
-            // Open the clicked panel
             const panel = document.getElementById(settingType + 'Panel');
             const icon = document.getElementById(settingType + 'Icon');
 
-            if (panel && icon) {
+            // Check if this panel is already active
+            const isCurrentlyActive = panel.classList.contains('active');
+
+            // Close all panels first
+            document.querySelectorAll('.settings-panel').forEach(p => {
+                p.classList.remove('active');
+            });
+            document.querySelectorAll('.setting-icon').forEach(i => {
+                i.classList.remove('active');
+            });
+
+            // If it wasn't active, open it. If it was active, keep it closed (toggle behavior)
+            if (!isCurrentlyActive && panel && icon) {
                 panel.classList.add('active');
                 icon.classList.add('active');
             }
+        }
+
+        function updateModelSetting(agentType, modelName) {
+            currentSettings.models[agentType] = modelName;
+            console.log(`Updated ${agentType} model to: ${modelName}`);
+
+            // Update model status
+            const status = document.getElementById('modelStatus');
+            status.className = 'model-status success';
+            status.textContent = `✅ ${agentType.charAt(0).toUpperCase() + agentType.slice(1)} model updated to ${modelName}`;
+
+            // Hide status after 3 seconds
+            setTimeout(() => {
+                status.classList.remove('success');
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        function resetModelsToDefault() {
+            const defaultModels = {
+                manager: 'gemma3:12b',
+                content: 'gemma3:12b',
+                trend: 'qwen3:30b',
+                research: 'qwen3:30b',
+                video: 'qwen3:30b',
+                music: 'qwen3:30b'
+            };
+
+            currentSettings.models = defaultModels;
+
+            // Update UI selects
+            document.getElementById('managerModel').value = defaultModels.manager;
+            document.getElementById('contentModel').value = defaultModels.content;
+            document.getElementById('trendModel').value = defaultModels.trend;
+            document.getElementById('researchModel').value = defaultModels.research;
+            document.getElementById('videoModel').value = defaultModels.video;
+            document.getElementById('musicModel').value = defaultModels.music;
+
+            const status = document.getElementById('modelStatus');
+            status.className = 'model-status success';
+            status.textContent = '🔄 All models reset to default values';
+
+            setTimeout(() => {
+                status.classList.remove('success');
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        async function checkOllamaModels() {
+            const btn = document.getElementById('checkModelsBtn');
+            const status = document.getElementById('modelStatus');
+
+            btn.disabled = true;
+            btn.textContent = '🔍 Checking...';
+
+            status.className = 'model-status loading';
+            status.textContent = '🔍 Checking available Ollama models...';
+
+            try {
+                const response = await fetch('/api/ollama/models');
+                const data = await response.json();
+
+                if (response.ok) {
+                    const availableModels = data.models || [];
+                    status.className = 'model-status success';
+
+                    if (availableModels.length > 0) {
+                        status.innerHTML = `
+                            <strong>✅ Available Models (${availableModels.length}):</strong><br>
+                            ${availableModels.map(model => `• ${model}`).join('<br>')}
+                        `;
+
+                        // Update select options with available models
+                        updateSelectOptionsWithAvailableModels(availableModels);
+                    } else {
+                        status.textContent = '⚠️ No models found. Make sure Ollama is running and has models installed.';
+                    }
+                } else {
+                    status.className = 'model-status error';
+                    status.textContent = `❌ ${data.error || 'Failed to check models'}`;
+                }
+            } catch (error) {
+                status.className = 'model-status error';
+                status.textContent = `❌ Connection failed: ${error.message}`;
+            }
+
+            btn.disabled = false;
+            btn.textContent = '🔍 Check Available Models';
+        }
+
+        function updateSelectOptionsWithAvailableModels(availableModels) {
+            const selects = ['managerModel', 'contentModel', 'trendModel', 'researchModel', 'videoModel', 'musicModel'];
+
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                const currentValue = select.value;
+
+                // Clear existing options
+                select.innerHTML = '';
+
+                // Add available models
+                availableModels.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    select.appendChild(option);
+                });
+
+                // Try to restore previous selection
+                if (availableModels.includes(currentValue)) {
+                    select.value = currentValue;
+                } else if (availableModels.length > 0) {
+                    // Select first available model if previous one not found
+                    select.value = availableModels[0];
+                    updateModelSetting(selectId.replace('Model', ''), availableModels[0]);
+                }
+            });
         }
 
         function updateToneValue(value) {
@@ -709,18 +975,39 @@
                             `;
                         }
 
-                        // Show tone setting if available
-                        let toneInfo = '';
-                        if (job.settings && typeof job.settings.tone !== 'undefined') {
-                            const tonePercent = Math.round(job.settings.tone * 100);
-                            const toneType = job.settings.tone < 0.5 ? '🤣 Humoristisch' : '📚 Informativ';
-                            toneInfo = `<span style="margin-left: 10px; font-size: 0.8em; color: #666;">${toneType} (${tonePercent}%)</span>`;
+                        // Show tone and model settings if available
+                        let settingsInfo = '';
+                        if (job.settings) {
+                            let infoParts = [];
+
+                            // Tone info
+                            if (typeof job.settings.tone !== 'undefined') {
+                                const tonePercent = Math.round(job.settings.tone * 100);
+                                const toneType = job.settings.tone < 0.5 ? '🤣 Humoristisch' : '📚 Informativ';
+                                infoParts.push(`${toneType} (${tonePercent}%)`);
+                            }
+
+                            // Model info - only show non-default models
+                            if (job.settings.models) {
+                                const models = job.settings.models;
+                                const customModels = Object.entries(models)
+                                    .filter(([key, value]) => value !== 'gemma3:12b' && value !== 'qwen3:30b')
+                                    .map(([key, value]) => `${key}: ${value.split(':')[0]}`)
+                                    .join(', ');
+                                if (customModels) {
+                                    infoParts.push(`🤖 ${customModels}`);
+                                }
+                            }
+
+                            if (infoParts.length > 0) {
+                                settingsInfo = `<span style="margin-left: 10px; font-size: 0.8em; color: #666;">${infoParts.join(' | ')}</span>`;
+                            }
                         }
 
                         const cardHtml = `
                             <div class="job-header">
                                 <div>
-                                    <div class="job-title">${job.topic}${toneInfo}</div>
+                                    <div class="job-title">${job.topic}${settingsInfo}</div>
                                     <div class="job-meta">Created: ${createdAt}</div>
                                 </div>
                                 <span class="status-badge ${statusClass}">${job.status}</span>

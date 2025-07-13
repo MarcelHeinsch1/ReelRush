@@ -287,6 +287,15 @@ def create_video():
     if not (0 <= tone <= 1):
         return jsonify({"error": "Tone must be between 0 and 1"}), 400
 
+    # Validate models
+    models = settings.get('models', {})
+    valid_agents = ['manager', 'content', 'trend', 'research', 'video', 'music']
+    for agent, model in models.items():
+        if agent not in valid_agents:
+            return jsonify({"error": f"Invalid agent type: {agent}"}), 400
+        if not isinstance(model, str) or len(model.strip()) == 0:
+            return jsonify({"error": f"Invalid model for {agent}"}), 400
+
     # Create new job with settings
     job_id = str(uuid.uuid4())
     job = VideoCreationJob(job_id, topic, settings)
@@ -295,6 +304,12 @@ def create_video():
     # Log settings
     logger.info(f"Creating video for '{topic}' with settings: {settings}")
     job.add_log(f"Settings - Tone: {tone:.2f} ({'Humorous' if tone < 0.5 else 'Informative'})")
+
+    # Log model settings if custom
+    models = settings.get('models', {})
+    custom_models = {k: v for k, v in models.items() if v not in ['gemma3:12b', 'qwen3:30b']}
+    if custom_models:
+        job.add_log(f"Custom Models: {', '.join([f'{k}={v}' for k, v in custom_models.items()])}")
 
     # Start video creation in background
     thread = threading.Thread(target=create_video_with_progress, args=(job,))
@@ -342,11 +357,19 @@ def download_video(job_id):
     safe_topic = safe_topic[:50]  # Limit length
     timestamp = job.created_at.strftime("%Y%m%d_%H%M%S")
 
-    # Add tone info to filename
+    # Add tone and model info to filename
     tone_value = job.settings.get('tone', 0.5)
     tone_suffix = "humorous" if tone_value < 0.5 else "informative"
 
-    filename = f"tiktok_{safe_topic}_{tone_suffix}_{timestamp}.mp4"
+    # Add model info if custom models are used
+    models = job.settings.get('models', {})
+    custom_models = {k: v for k, v in models.items() if v not in ['gemma3:12b', 'qwen3:30b']}
+    model_suffix = ""
+    if custom_models:
+        model_names = [v.split(':')[0] for v in custom_models.values()]
+        model_suffix = f"_{'_'.join(set(model_names))}"
+
+    filename = f"tiktok_{safe_topic}_{tone_suffix}{model_suffix}_{timestamp}.mp4"
 
     logger.info(f"Serving video file: {video_file} as {filename}")
 
@@ -356,6 +379,52 @@ def download_video(job_id):
         download_name=filename,
         mimetype='video/mp4'
     )
+
+
+@app.route('/api/ollama/models')
+def get_ollama_models():
+    """Get available Ollama models"""
+    try:
+        import requests
+        response = requests.get("http://localhost:11434/api/tags", timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+            models = []
+
+            if 'models' in data:
+                for model in data['models']:
+                    model_name = model.get('name', '').replace(':latest', '')
+                    if model_name and model_name not in models:
+                        models.append(model_name)
+
+            models.sort()  # Sort alphabetically
+
+            return jsonify({
+                "models": models,
+                "count": len(models),
+                "status": "success"
+            })
+        else:
+            return jsonify({
+                "error": f"Ollama API returned status {response.status_code}",
+                "models": [],
+                "status": "error"
+            }), 500
+
+    except requests.exceptions.ConnectionError:
+        return jsonify({
+            "error": "Cannot connect to Ollama. Make sure Ollama is running on localhost:11434",
+            "models": [],
+            "status": "error"
+        }), 503
+
+    except Exception as e:
+        return jsonify({
+            "error": f"Failed to check Ollama models: {str(e)}",
+            "models": [],
+            "status": "error"
+        }), 500
 
 
 @app.route('/api/jobs')
