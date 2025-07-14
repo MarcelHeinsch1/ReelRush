@@ -659,15 +659,15 @@
                                    id="toneSlider"
                                    oninput="updateToneValue(this.value)">
                             <div class="tone-labels">
-                                <span>🤣 Humoristisch/Memig</span>
-                                <span>📚 Informativ/Sachlich</span>
+                                <span>🤣 Humorous/Meme</span>
+                                <span>📚 Informative/objective</span>
                             </div>
                             <div class="tone-value" id="toneValue">
-                                Ausgeglichen (50% Humor, 50% Info)
+                                Balanced (50% humor, 50% info)
                             </div>
                         </div>
                         <div class="help-text">
-                            Bestimme den Stil deines TikToks: Links für lustige Memes und Humor, rechts für sachliche Informationen und Fakten.
+                            Determine the style of your TikTok: Left for funny memes and humor, right for factual information and facts.
                         </div>
                     </div>
                 </div>
@@ -750,7 +750,7 @@
                             </button>
                         </div>
                         <div class="help-text">
-                            Wähle verschiedene Ollama-Modelle für jeden Agenten. Größere Modelle (30b) sind langsamer aber qualitativ besser, kleinere (8b) sind schneller.
+                            Choose different Ollama models for each agent. Larger models (30b) are slower but of better quality, smaller ones (8b) are faster (There are some issues with DeepSeek-R1 specifically).
                         </div>
                         <div class="model-status" id="modelStatus"></div>
                     </div>
@@ -798,8 +798,8 @@
                         </div>
 
                         <div class="help-text">
-                            Lade ein PDF-Dokument hoch und erstelle automatisch ein TikTok-Video, das die wichtigsten Punkte zusammenfasst.
-                            Perfekt für Research Papers, Reports oder andere Dokumente.
+                            Upload a PDF document and automatically create a TikTok video that summarizes the key points.
+                            Perfect for research papers, reports or other documents.
                         </div>
                     </div>
                 </div>
@@ -996,15 +996,15 @@
             let description = '';
 
             if (toneValue < 0.2) {
-                description = `Sehr humoristisch (${Math.round((1-toneValue)*100)}% Humor)`;
+                description = `Very humorous (${Math.round((1-toneValue)*100)}% Humor)`;
             } else if (toneValue < 0.4) {
-                description = `Humoristisch (${Math.round((1-toneValue)*100)}% Humor, ${Math.round(toneValue*100)}% Info)`;
+                description = `Humorous (${Math.round((1-toneValue)*100)}% Humor, ${Math.round(toneValue*100)}% Info)`;
             } else if (toneValue < 0.6) {
-                description = `Ausgeglichen (${Math.round((1-toneValue)*100)}% Humor, ${Math.round(toneValue*100)}% Info)`;
+                description = `Balanced (${Math.round((1-toneValue)*100)}% Humor, ${Math.round(toneValue*100)}% Info)`;
             } else if (toneValue < 0.8) {
-                description = `Informativ (${Math.round((1-toneValue)*100)}% Humor, ${Math.round(toneValue*100)}% Info)`;
+                description = `Informative (${Math.round((1-toneValue)*100)}% Humor, ${Math.round(toneValue*100)}% Info)`;
             } else {
-                description = `Sehr informativ (${Math.round(toneValue*100)}% Info)`;
+                description = `Very informative (${Math.round(toneValue*100)}% Info)`;
             }
 
             toneValueElement.textContent = description;
