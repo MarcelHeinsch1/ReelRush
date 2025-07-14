@@ -40,7 +40,6 @@ pip install -r requirements.txt
 ### 3. Ollama Setup
 ```bash
 # Install Ollama (see https://ollama.ai)
-curl -fsSL https://ollama.ai/install.sh | sh
 
 # Download recommended models
 ollama pull gemma3:12b
@@ -59,7 +58,7 @@ cd vosk-model-en-us-0.22
 wget https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip
 unzip vosk-model-en-us-0.22.zip
 ```
-or just download it
+or just download it https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip and unzip it into the folder
 
 ### 5. Video Templates and Music
 ```bash
