@@ -79,7 +79,7 @@ sudo apt update && sudo apt install ffmpeg
 brew install ffmpeg
 
 # Windows
-# Download FFmpeg from https://ffmpeg.org
+# Download FFmpeg from https://ffmpeg.org and add the /bin to system path
 ```
 
 ## Usage

@@ -1,6 +1,7 @@
 """Web Frontend for TikTok Creator - FIXED PDF Integration"""
 
 import os
+import subprocess
 import time
 import threading
 import uuid
@@ -728,9 +729,39 @@ def cleanup_old_videos():
         return jsonify({"error": str(e)}), 500
 
 
+def initialize_system() -> ManagerAgent:
+    """Initialize the multi-agent system and verify all dependencies"""
+    print("Initializing Multi-Agent TikTok Creator...")
+
+    # Check required dependencies nd tools
+    try:
+        subprocess.run(["ffmpeg", "-version"], capture_output=True, timeout=5, check=True)
+        print("FFmpeg available")
+    except:
+        raise Exception("FFmpeg not found - required for video processing")
+
+    try:
+        import edge_tts
+        print("edge-tts available")
+    except ImportError:
+        raise Exception("edge-tts not installed - required for narration")
+
+    try:
+        from duckduckgo_search import DDGS
+        print("duckduckgo-search available")
+    except ImportError:
+        raise Exception("duckduckgo-search not installed")
+
+    try:
+        import vosk
+        print("Vosk available")
+    except ImportError:
+        raise Exception("Vosk not installed - required for subtitles")
+
 if __name__ == '__main__':
     # Create templates directory if it doesn't exist
     os.makedirs('templates', exist_ok=True)
+    initialize_system()
 
     print("🌐 TikTok Creator Web Frontend - Enhanced Version")
     print("=" * 50)
