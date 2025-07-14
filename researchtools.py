@@ -748,7 +748,7 @@ class ContentResearchAgent:
             agent=agent,
             tools=self.tools,
             verbose=True,
-            max_iterations=5,  # Reduced to prevent loops
+            max_iterations=15,  # Reduced to prevent loops
             handle_parsing_errors=True,
             early_stopping_method="force"
         )
