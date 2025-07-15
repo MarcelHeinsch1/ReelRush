@@ -60,8 +60,7 @@ unzip vosk-model-en-us-0.22.zip
 ```
 or just download it https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip and unzip it into the folder
 
-
-### 6. Install FFmpeg
+### 5. Install FFmpeg
 ```bash
 # Ubuntu/Debian
 sudo apt update && sudo apt install ffmpeg
