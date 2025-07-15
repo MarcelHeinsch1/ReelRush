@@ -28,7 +28,7 @@ An advanced Multi-Agent system for automatic creation of viral TikTok videos wit
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/
+git clone https://github.com/MarcelHeinsch1/ReelRush
 cd reelrush
 ```
 
