@@ -60,15 +60,6 @@ unzip vosk-model-en-us-0.22.zip
 ```
 or just download it https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip and unzip it into the folder
 
-### 5. Video Templates and Music
-```bash
-# Create folder structure
-mkdir -p videos/templates
-mkdir -p music/viral
-
-# Add video templates (MP4 files)
-# Add music files (MP3/WAV)
-```
 
 ### 6. Install FFmpeg
 ```bash
