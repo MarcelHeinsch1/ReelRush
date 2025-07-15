@@ -274,4 +274,4 @@ python web_app.py
 
 **Created with ❤️ by YurrBS**
 
-*Note: This tool is intended for educational and research purposes.*
+*Note: This tool is intended for educational purposes.*
