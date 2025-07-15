@@ -148,12 +148,12 @@ TONE: VERY INFORMATIVE/EDUCATIONAL (Focus: Deep Knowledge)
         """Get model for specific agent type"""
         models = self.settings.get('models', {})
         defaults = {
-            'manager': 'qwen3:30b',
-            'content': 'gemma3:12b',
-            'trend': 'qwen3:30b',
-            'research': 'qwen3:30b',
-            'video': 'qwen3:30b',
-            'music': 'qwen3:30b'
+            'manager': 'gemma3:12b',
+            'content': 'gemma3:27b',
+            'trend': 'gemma3:12b',
+            'research': 'gemma3:27b',
+            'video': 'gemma3:12b',
+            'music': 'gemma3:12b'
         }
         return models.get(agent_type, defaults.get(agent_type, 'gemma3:12b'))
 
