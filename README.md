@@ -2,6 +2,10 @@
 
 An advanced Multi-Agent system for automatic creation of viral TikTok videos with AI-powered trend analysis, content research, and video production.
 
+## Example Video
+
+[example_video.mp4](example_video.mp4)
+
 ## Features
 
 ### Multi-Agent Architecture
