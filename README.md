@@ -4,7 +4,7 @@ An advanced Multi-Agent system for automatic creation of viral TikTok videos wit
 
 ## Example Video
 
-[example_video.mp4](example_video.mp4)
+[Example_Video.mp4](Example_Video.mp4)
 
 ## Features
 
