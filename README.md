@@ -74,6 +74,7 @@ brew install ffmpeg
 
 # Windows
 # Download FFmpeg from https://ffmpeg.org and add the /bin to system path
+# note that you have to restart cmd or the python ide before running the script
 ```
 
 ## Usage
